@@ -16,7 +16,7 @@ export GH_TOKEN="${GITHUB_TOKEN}"
 # NOTE: 'copilot -p "auth status"' checks for a persisted login session.  When only
 # GH_TOKEN is set (no interactive login has been performed), the check may
 # return non-zero even though the server will authenticate fine via the token.
-# We therefore treat a failing status as a warning rather than a fatal error so
+# We therefore treat a failing status as an error rather than a fatal error so
 # that the add-on can still start; the server log will surface any real auth
 # problems.
 bashio::log.info "Verifying GitHub Copilot CLI authentication..."
@@ -26,14 +26,14 @@ else
     bashio::log.error "Copilot CLI auth status check failed. This is expected when using a raw GH_TOKEN without a persisted session. Proceeding to start the server -- check the server logs if authentication fails at runtime."
 fi
 
-# Start the Copilot CLI in headless server mode with a retry loop.
+# Start the Copilot CLI in ACP server mode with a retry loop.
 MAX_RETRIES=5
 RETRY_DELAY=5
 ATTEMPT=1
 
 while true; do
     bashio::log.info "Starting GitHub Copilot CLI server on port 8000 (attempt ${ATTEMPT})..."
-    copilot --headless --port 8000 --bind 0.0.0.0
+    copilot acp --port 8000
     EXIT_CODE=$?
 
     if [ "${EXIT_CODE}" -eq 0 ]; then
