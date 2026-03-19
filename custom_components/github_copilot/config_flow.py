@@ -48,7 +48,12 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             model = user_input.get(CONF_MODEL, DEFAULT_MODEL)
             cli_url = user_input.get(CONF_CLI_URL, DEFAULT_CLI_URL).strip()
+            api_token = user_input.get(CONF_API_TOKEN, "").strip()
 
+            # Validate that either cli_url or api_token is provided
+            if not cli_url and not api_token:
+                _errors["base"] = "missing_credentials"
+            
             # Validate the CLI URL format if provided
             if cli_url:
                 parsed = urlparse(cli_url)
@@ -62,7 +67,7 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         model,
                     )
                     await self._test_credentials(
-                        api_token=user_input[CONF_API_TOKEN],
+                        api_token=api_token,
                         model=model,
                         cli_url=cli_url,
                     )
@@ -107,7 +112,7 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user",
                 data_schema=vol.Schema(
                     {
-                        vol.Required(CONF_API_TOKEN): selector.TextSelector(
+                        vol.Optional(CONF_API_TOKEN, default=""): selector.TextSelector(
                             selector.TextSelectorConfig(
                                 type=selector.TextSelectorType.PASSWORD,
                             ),
@@ -146,7 +151,7 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user",
                 data_schema=vol.Schema(
                     {
-                        vol.Required(CONF_API_TOKEN): str,
+                        vol.Optional(CONF_API_TOKEN, default=""): str,
                     }
                 ),
                 errors={"base": "unknown"},
