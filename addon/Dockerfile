@@ -12,11 +12,7 @@ RUN apt-get update \
 # Install the GitHub Copilot CLI from a pinned release, verifying the SHA-256 checksum.
 # Only linux/amd64 and linux/arm64 binaries are published; other architectures are unsupported.
 ARG COPILOT_VERSION=v0.0.418
-RUN case "$(uname -m)" in \
-      x86_64)  ARCH="x64"   ;; \
-      aarch64) ARCH="arm64" ;; \
-      *) echo "Unsupported architecture: $(uname -m)" && exit 1 ;; \
-    esac && \
+RUN case "$(uname -m)" in x86_64) ARCH="x64" ;; aarch64) ARCH="arm64" ;; *) echo "Unsupported architecture: $(uname -m)" && exit 1 ;; esac && \
     ASSET="copilot-linux-${ARCH}.tar.gz" && \
     BASE_URL="https://github.com/github/copilot-cli/releases/download/${COPILOT_VERSION}" && \
     curl -fsSL "${BASE_URL}/SHA256SUMS.txt" -o /tmp/SHA256SUMS.txt && \
