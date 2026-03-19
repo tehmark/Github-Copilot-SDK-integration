@@ -33,7 +33,7 @@ ATTEMPT=1
 
 while true; do
     bashio::log.info "Starting GitHub Copilot CLI server on port 8000 (attempt ${ATTEMPT})..."
-    copilot -p "acp --port 8000"
+    copilot --acp --port 8000
     EXIT_CODE=$?
 
     if [ "${EXIT_CODE}" -eq 0 ]; then
