@@ -9,7 +9,7 @@
                 },
                 "data_description": {
                     "cli_url": "URL of the GitHub Copilot Bridge Addon server. Default: {default_url} — find the exact hostname in the add-on Info tab.",
-                    "model": "The AI model to use for conversations"
+                    "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers."
                 }
             }
         },
@@ -31,7 +31,7 @@
                     "model": "Model"
                 },
                 "data_description": {
-                    "model": "The AI model to use for conversations"
+                    "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers."
                 }
             }
         }

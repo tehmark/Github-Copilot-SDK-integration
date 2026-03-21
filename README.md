@@ -98,12 +98,22 @@ automation:
 
 ### Changing the model
 
-Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integration** → **Configure** to switch models. Available models:
+Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integration** → **Configure** to switch models.
 
-- GPT-4o (default)
-- GPT-4o-mini, GPT-4, GPT-4 Turbo, GPT-3.5 Turbo
-- o3-mini, o1, o1-mini
-- Claude 3.5 Sonnet, Claude 3.7 Sonnet
+| Model | Cost (paid plans) | Notes |
+|---|---|---|
+| `gpt-4o` ✓ | **Included** | Default. Best balance of quality and speed |
+| `gpt-4o-mini` ✓ | **Included** | Faster, lighter — good for quick tasks |
+| `gpt-3.5-turbo` ✓ | **Included** | Fastest, lowest quality |
+| `o3-mini` | Premium | Reasoning model — slower, very capable |
+| `o1-mini` | Premium | Reasoning model |
+| `o1` | Premium (high) | Deep reasoning, high token cost |
+| `gpt-4-turbo` | Premium | Strong quality, premium cost |
+| `gpt-4` | Premium | Older flagship model |
+| `claude-3.5-sonnet` | Premium (~1×) | Anthropic model |
+| `claude-3.7-sonnet` | Premium (~1×) | Anthropic model, latest |
+
+> **Tip:** Start with `gpt-4o` — it's included in paid plans, so every request is free against your allowance. Switch to a premium model only if you need deeper reasoning or a specific style. GitHub updates multipliers frequently; check [github.com/features/copilot/plans](https://github.com/features/copilot/plans) for current numbers.
 
 ## Troubleshooting
 

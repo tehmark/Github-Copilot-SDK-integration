@@ -23,6 +23,7 @@ from .const import (
     DOMAIN,
     LOGGER,
     SUPPORTED_MODELS,
+    SUPPORTED_MODEL_IDS,
 )
 
 
@@ -118,7 +119,7 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                             default=DEFAULT_MODEL,
                         ): selector.SelectSelector(
                             selector.SelectSelectorConfig(
-                                options=SUPPORTED_MODELS,
+                                options=SUPPORTED_MODELS,  # type: ignore[arg-type]
                                 mode=selector.SelectSelectorMode.DROPDOWN,
                             ),
                         ),
@@ -210,7 +211,7 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
                         default=current_model,
                     ): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=SUPPORTED_MODELS,
+                            options=SUPPORTED_MODELS,  # type: ignore[arg-type]
                             mode=selector.SelectSelectorMode.DROPDOWN,
                         ),
                     ),
