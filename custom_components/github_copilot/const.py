@@ -13,7 +13,7 @@ CONF_CLI_URL = "cli_url"
 
 # Default values
 DEFAULT_MODEL = "gpt-4o"
-DEFAULT_CLI_URL = "http://local-github_copilot_bridge:7681"
+DEFAULT_CLI_URL = "http://github-copilot-bridge:7681"
 
 # Model list with display labels showing approximate cost category.
 # "Included" models do not consume premium requests on paid Copilot plans.
