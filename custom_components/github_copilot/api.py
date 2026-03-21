@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-import os
-import shutil
 from contextlib import suppress
-from dataclasses import dataclass, field
-from pathlib import Path
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import copilot
@@ -32,43 +29,6 @@ class GitHubCopilotApiClientAuthenticationError(
     GitHubCopilotApiClientError,
 ):
     """Exception to indicate an authentication error."""
-
-
-@dataclass
-class CliInstallationStatus:
-    """
-    Status information for Copilot CLI installation check.
-
-    This dataclass collects information about CLI installation status,
-    helping users understand if the CLI is properly installed and accessible.
-
-    Attributes:
-        cli_installed: Whether the Copilot CLI was found on the system.
-        cli_path: Path to the Copilot CLI executable, if found.
-        error_details: Specific error message for troubleshooting.
-        suggestions: List of suggestions for the user to try.
-
-    """
-
-    cli_installed: bool = False
-    cli_path: str | None = None
-    error_details: str = ""
-    suggestions: list[str] = field(default_factory=list)
-
-    def to_user_message(self) -> str:
-        """Generate user-friendly diagnostic message."""
-        parts = []
-        if not self.cli_installed:
-            parts.append("GitHub Copilot CLI is not installed or not found in PATH.")
-            parts.append("Please install it from: https://docs.github.com/copilot/cli")
-        elif self.error_details:
-            parts.append(f"Error: {self.error_details}")
-
-        if self.suggestions:
-            parts.append("Suggestions:")
-            parts.extend(f"  - {suggestion}" for suggestion in self.suggestions)
-
-        return " ".join(parts) if parts else "Unknown error"
 
 
 @dataclass
@@ -266,292 +226,87 @@ class GitHubCopilotApiClient:
                 await self._client.stop()
                 self._client = None
 
-    def _check_cli_installed(self) -> CliInstallationStatus:
-        """Check if GitHub Copilot CLI is installed and accessible."""
-        status = CliInstallationStatus()
-
-        base_suggestions = [
-            ("Install the GitHub Copilot CLI: https://docs.github.com/copilot/cli"),
-            (
-                "Ensure the CLI is in your PATH or set COPILOT_CLI_PATH to its "
-                "full path."
-            ),
-        ]
-
-        raw_cli_candidates = [
-            self._client_options.get("cli_path"),
-            os.environ.get("COPILOT_CLI_PATH"),
-            "copilot",
-        ]
-        cli_candidates = [
-            candidate.strip()
-            for candidate in raw_cli_candidates
-            if isinstance(candidate, str) and candidate.strip()
-        ]
-        cli_to_check = cli_candidates[0] if cli_candidates else "copilot"
-        explicit_value = next(
-            (
-                candidate.strip()
-                for candidate in raw_cli_candidates[:2]
-                if isinstance(candidate, str) and candidate.strip()
-            ),
-            None,
-        )
-        explicit_requested = explicit_value is not None
-
-        # Check for copilot CLI in PATH or at an explicit location
-        cli_path = shutil.which(cli_to_check)
-        explicit_path: Path | None = None
-        candidate_path: Path | None = None
-        path_parsing_failed = False
-        try:
-            candidate_path = Path(cli_to_check).expanduser()
-        except (ValueError, OSError, RuntimeError) as error:
-            status.error_details = (
-                f"The configured Copilot CLI path is invalid ({type(error).__name__})"
-            )
-            path_parsing_failed = True
-
-        if path_parsing_failed:
-            status.suggestions = list(base_suggestions)
-            return status
-
-        # Defensive checks before using candidate_path
-        try:
-            if cli_to_check != "copilot" and (
-                candidate_path.is_absolute()
-                or os.sep in cli_to_check
-                or (os.altsep and os.altsep in cli_to_check)
-            ):
-                explicit_path = candidate_path
-        except (AttributeError, OSError, RuntimeError) as error:
-            # If any path check fails, treat it as an invalid path
-            status.error_details = (
-                f"Path validation failed ({type(error).__name__}). "
-                "Please provide a valid CLI path."
-            )
-            status.suggestions = list(base_suggestions)
-            return status
-
-        if explicit_requested and explicit_path:
-            try:
-                if explicit_path.exists():
-                    if explicit_path.is_file() and os.access(explicit_path, os.X_OK):
-                        cli_path = str(explicit_path)
-                    else:
-                        status.error_details = (
-                            "The configured Copilot CLI path exists but is not "
-                            "executable. Adjust permissions (e.g., chmod +x) and retry."
-                        )
-                        status.suggestions = [
-                            *base_suggestions,
-                            (
-                                "An explicit CLI path was provided; "
-                                "ensure it exists and is executable."
-                            ),
-                        ]
-                        return status
-            except (OSError, RuntimeError) as error:
-                status.error_details = (
-                    f"Failed to verify CLI path ({type(error).__name__})"
-                )
-                status.suggestions = list(base_suggestions)
-                return status
-
-        if explicit_requested and not cli_path:
-            status.error_details = (
-                "The configured Copilot CLI path was not found or is not executable."
-            )
-            status.suggestions = [
-                *base_suggestions,
-                (
-                    "An explicit CLI path was provided; ensure it exists and is "
-                    "executable."
-                ),
-                (
-                    "If running Home Assistant OS, install the CLI inside the core "
-                    "container (not only the SSH add-on) and make auth persistent "
-                    "with GH_CONFIG_DIR=/config/.gh_config."
-                ),
-            ]
-            return status
-
-        if cli_path:
-            status.cli_installed = True
-            status.cli_path = cli_path
-            status.error_details = ""
-        else:
-            # Also check common installation locations
-            common_paths = [
-                Path.home() / ".local" / "bin" / "copilot",
-                Path("/usr/local/bin/copilot"),
-                Path("/usr/bin/copilot"),
-                Path("/config/copilot"),
-                Path("/config/bin/copilot"),
-            ]
-            for path in common_paths:
-                try:
-                    if path.is_file() and os.access(path, os.X_OK):
-                        status.cli_installed = True
-                        status.cli_path = str(path)
-                        break
-                except (OSError, RuntimeError):
-                    # If we can't check this path, skip to the next one
-                    continue
-
-        if not status.cli_installed:
-            status.error_details = status.error_details or (
-                "Copilot CLI was not found in PATH or common installation locations "
-                "(~/.local/bin/copilot, /usr/local/bin/copilot, /usr/bin/copilot, "
-                "/config/copilot, /config/bin/copilot)."
-            )
-            status.suggestions = [
-                *base_suggestions,
-                (
-                    "If running Home Assistant OS, you can place the CLI binary at "
-                    "/config/copilot or /config/bin/copilot to persist across updates."
-                ),
-                (
-                    "Make authentication persistent with "
-                    "GH_CONFIG_DIR=/config/.gh_config."
-                ),
-            ]
-
-        return status
-
-    @staticmethod
-    def _format_errno_info(exception: Exception) -> str:
-        """
-        Format errno info from an exception without exposing path details.
-
-        Args:
-            exception: The exception to extract errno from
-
-        Returns:
-            A formatted string with errno if available, empty string otherwise
-
-        """
-        if hasattr(exception, "errno") and exception.errno:
-            return f" (errno: {exception.errno})"
-        return ""
-
     async def _ensure_client(self) -> copilot.CopilotClient:
-        """Ensure the Copilot SDK client is started."""
+        """Ensure the Copilot SDK client is started and connected to the add-on."""
         async with self._client_lock:
             if self._client:
                 return self._client
 
-            # Skip local CLI check when a remote CLI URL is configured
-            using_remote_cli = bool(self._client_options.get("cli_url", "").strip())
+            cli_url = self._client_options.get("cli_url", "").strip()
+            if not cli_url:
+                msg = (
+                    "No Copilot CLI URL configured. "
+                    "Please set the add-on URL (e.g. http://local-github_copilot_bridge:7681) "
+                    "in the integration settings."
+                )
+                LOGGER.error(msg)
+                raise GitHubCopilotApiClientCommunicationError(msg)
 
-            if not using_remote_cli:
-                # First check if CLI is installed (only needed for local mode)
-                cli_status = self._check_cli_installed()
-                if not cli_status.cli_installed:
-                    LOGGER.error(
-                        "GitHub Copilot CLI not found. %s",
-                        cli_status.to_user_message(),
-                    )
-                    msg = (
-                        "GitHub Copilot CLI not found. "
-                        "Please install it from https://docs.github.com/copilot/cli "
-                        "and ensure it's in your PATH."
-                    )
-                    raise GitHubCopilotApiClientCommunicationError(msg)
-
-            # Initialize the Copilot client
+            LOGGER.debug("Initialising Copilot SDK client with cli_url=%s", cli_url)
             try:
-                client = copilot.CopilotClient(self._client_options)
+                client = copilot.CopilotClient({"cli_url": cli_url})
             except (TypeError, ValueError) as exception:
                 LOGGER.error(
-                    "Invalid client configuration: %s",
+                    "Invalid Copilot client configuration (cli_url=%s): %s",
+                    cli_url,
                     type(exception).__name__,
                 )
-                msg = (
-                    "Invalid Copilot client configuration. Please check your settings."
-                )
+                msg = "Invalid Copilot client configuration. Please check the add-on URL."
                 raise GitHubCopilotApiClientError(msg) from exception
             except Exception as exception:
                 LOGGER.error(
-                    "Failed to initialize Copilot client: %s",
+                    "Unexpected error initialising Copilot client (cli_url=%s): %s - %s",
+                    cli_url,
                     type(exception).__name__,
+                    str(exception),
                 )
-                msg = f"Unable to initialize Copilot client: {type(exception).__name__}"
+                msg = f"Unable to initialise Copilot client: {type(exception).__name__}"
                 raise GitHubCopilotApiClientError(msg) from exception
+
+            LOGGER.debug("Calling client.start() to connect to add-on at %s...", cli_url)
             try:
                 await client.start()
-            except FileNotFoundError as exception:
-                LOGGER.error(
-                    "Copilot CLI executable not found%s",
-                    self._format_errno_info(exception),
-                )
-                msg = (
-                    "GitHub Copilot CLI executable not found. "
-                    "Please install it from https://docs.github.com/copilot/cli"
-                )
-                raise GitHubCopilotApiClientCommunicationError(msg) from None
-            except PermissionError as exception:
-                LOGGER.error(
-                    "Permission denied when starting Copilot CLI%s",
-                    self._format_errno_info(exception),
-                )
-                msg = (
-                    "Permission denied when starting GitHub Copilot CLI. "
-                    "Please check file permissions."
-                )
-                raise GitHubCopilotApiClientCommunicationError(msg) from None
             except ConnectionRefusedError as exception:
                 LOGGER.error(
-                    "Connection refused by Copilot CLI: %s",
-                    exception,
+                    "Connection refused by Copilot add-on at %s. "
+                    "Is the add-on running? Check the add-on logs.",
+                    cli_url,
                 )
                 msg = (
-                    "Connection refused by GitHub Copilot CLI. "
-                    "The CLI server may not be running or is misconfigured."
+                    f"Connection refused by the Copilot add-on at {cli_url}. "
+                    "Ensure the GitHub Copilot Bridge add-on is running."
                 )
                 raise GitHubCopilotApiClientCommunicationError(msg) from exception
-            except Exception as exception:
+            except OSError as exception:
                 LOGGER.error(
-                    "Failed to start Copilot SDK client: %s - %s",
-                    type(exception).__name__,
-                    str(exception),
-                )
-                exc_name = type(exception).__name__
-                msg = (
-                    f"Unable to connect to GitHub Copilot CLI: {exc_name}. "
-                    "Please check the logs for more details."
-                )
-                raise GitHubCopilotApiClientCommunicationError(msg) from exception
-
-            try:
-                auth_status = await client.get_auth_status()
-            except Exception as exception:
-                await client.stop()
-                LOGGER.error(
-                    "Failed to get Copilot authentication status: %s - %s",
+                    "Network error connecting to Copilot add-on at %s: %s - %s",
+                    cli_url,
                     type(exception).__name__,
                     str(exception),
                 )
                 msg = (
-                    "Failed to verify Copilot CLI authentication. "
-                    "Please run 'copilot auth login' to authenticate."
+                    f"Network error connecting to Copilot add-on at {cli_url}: "
+                    f"{type(exception).__name__}. Check that the URL is correct and "
+                    "the add-on is running."
                 )
-                raise GitHubCopilotApiClientAuthenticationError(msg) from exception
-
-            if not auth_status.isAuthenticated:
-                await client.stop()
-                LOGGER.warning(
-                    "Copilot CLI is not authenticated. "
-                    "User needs to run 'copilot auth login'"
+                raise GitHubCopilotApiClientCommunicationError(msg) from exception
+            except Exception as exception:
+                LOGGER.error(
+                    "Failed to connect to Copilot add-on at %s: %s - %s",
+                    cli_url,
+                    type(exception).__name__,
+                    str(exception),
                 )
                 msg = (
-                    "GitHub Copilot CLI is not authenticated. "
-                    "Please run 'copilot auth login' to authenticate, "
-                    "or provide a valid GitHub token with Copilot access."
+                    f"Unable to connect to Copilot add-on at {cli_url}: "
+                    f"{type(exception).__name__}. Check the logs for details."
                 )
-                raise GitHubCopilotApiClientAuthenticationError(msg)
+                raise GitHubCopilotApiClientCommunicationError(msg) from exception
 
-            LOGGER.info("Successfully connected to GitHub Copilot CLI")
+            LOGGER.info(
+                "Successfully connected to GitHub Copilot CLI ACP server at %s",
+                cli_url,
+            )
             self._client = client
             return client
 

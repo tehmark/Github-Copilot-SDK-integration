@@ -52,7 +52,7 @@ class GitHubCopilotConversationEntity(conversation.ConversationEntity):
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize the agent."""
         self.entry = config_entry
-        self._attr_name = "GitHub Copilot"
+        self._attr_name = "GitHub Copilot Bridge Integration"
         self._attr_unique_id = f"{config_entry.entry_id}-conversation"
         self.sessions: dict[str, CopilotSessionContext] = {}
         self._session_last_used: dict[str, float] = {}

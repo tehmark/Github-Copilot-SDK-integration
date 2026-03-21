@@ -15,7 +15,6 @@ from homeassistant.loader import async_get_loaded_integration
 
 from .api import GitHubCopilotApiClient
 from .const import (
-    CONF_API_TOKEN,
     CONF_CLI_URL,
     CONF_MODEL,
     DEFAULT_CLI_URL,
@@ -50,17 +49,17 @@ async def async_setup_entry(
             update_interval=timedelta(hours=1),
         )
         cli_url = entry.data.get(CONF_CLI_URL, DEFAULT_CLI_URL).strip()
-        client_options: dict[str, str] = {}
-        if cli_url:
-            # When using a remote CLI server, it manages its own auth
-            client_options["cli_url"] = cli_url
-        else:
-            # Only pass github_token when using local CLI (no cli_url)
-            client_options["github_token"] = entry.data[CONF_API_TOKEN]
+        if not cli_url:
+            LOGGER.error(
+                "No Copilot CLI URL in config entry — cannot set up integration. "
+                "Please re-add the integration and provide the add-on URL."
+            )
+            return False
+        LOGGER.debug("Setting up GitHub Copilot integration with add-on URL: %s", cli_url)
         entry.runtime_data = GitHubCopilotData(
             client=GitHubCopilotApiClient(
                 model=entry.data.get(CONF_MODEL, DEFAULT_MODEL),
-                client_options=client_options,
+                client_options={"cli_url": cli_url},
             ),
             integration=async_get_loaded_integration(hass, entry.domain),
             coordinator=coordinator,

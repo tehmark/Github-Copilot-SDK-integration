@@ -16,7 +16,6 @@ from .api import (
     GitHubCopilotApiClientError,
 )
 from .const import (
-    CONF_API_TOKEN,
     CONF_CLI_URL,
     CONF_MODEL,
     DEFAULT_CLI_URL,
@@ -48,14 +47,10 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             model = user_input.get(CONF_MODEL, DEFAULT_MODEL)
             cli_url = user_input.get(CONF_CLI_URL, DEFAULT_CLI_URL).strip()
-            api_token = user_input.get(CONF_API_TOKEN, "").strip()
 
-            # Validate that either cli_url or api_token is provided
-            if not cli_url and not api_token:
-                _errors["base"] = "missing_credentials"
-            
-            # Validate the CLI URL format if provided
-            if cli_url:
+            if not cli_url:
+                _errors[CONF_CLI_URL] = "required"
+            else:
                 parsed = urlparse(cli_url)
                 if parsed.scheme not in ("http", "https") or not parsed.netloc:
                     _errors[CONF_CLI_URL] = "invalid_url"
@@ -63,14 +58,11 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             if not _errors:
                 try:
                     LOGGER.debug(
-                        "Testing GitHub Copilot credentials with model '%s'",
+                        "Testing connection to Copilot add-on at '%s' with model '%s'",
+                        cli_url,
                         model,
                     )
-                    await self._test_credentials(
-                        api_token=api_token,
-                        model=model,
-                        cli_url=cli_url,
-                    )
+                    await self._test_connection(cli_url=cli_url, model=model)
                 except GitHubCopilotApiClientAuthenticationError as exception:
                     LOGGER.warning(
                         "GitHub Copilot authentication failed: %s",
@@ -79,7 +71,7 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     _errors["base"] = "auth"
                 except GitHubCopilotApiClientCommunicationError as exception:
                     LOGGER.error(
-                        "Failed to connect to GitHub Copilot CLI: %s",
+                        "Failed to connect to GitHub Copilot add-on: %s",
                         exception,
                     )
                     _errors["base"] = "connection"
@@ -99,11 +91,12 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     await self.async_set_unique_id("github_copilot")
                     self._abort_if_unique_id_configured()
                     LOGGER.info(
-                        "GitHub Copilot integration configured with model '%s'",
+                        "GitHub Copilot integration configured (add-on: '%s', model: '%s')",
+                        cli_url,
                         model,
                     )
                     return self.async_create_entry(
-                        title="GitHub Copilot",
+                        title="GitHub Copilot Bridge Integration",
                         data=user_input,
                     )
 
@@ -112,9 +105,12 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 step_id="user",
                 data_schema=vol.Schema(
                     {
-                        vol.Optional(CONF_API_TOKEN, default=""): selector.TextSelector(
+                        vol.Required(
+                            CONF_CLI_URL,
+                            default=DEFAULT_CLI_URL,
+                        ): selector.TextSelector(
                             selector.TextSelectorConfig(
-                                type=selector.TextSelectorType.PASSWORD,
+                                type=selector.TextSelectorType.URL,
                             ),
                         ),
                         vol.Optional(
@@ -126,19 +122,12 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                                 mode=selector.SelectSelectorMode.DROPDOWN,
                             ),
                         ),
-                        vol.Optional(
-                            CONF_CLI_URL,
-                            default=DEFAULT_CLI_URL,
-                        ): selector.TextSelector(
-                            selector.TextSelectorConfig(
-                                type=selector.TextSelectorType.URL,
-                            ),
-                        ),
                     },
                 ),
                 errors=_errors,
                 description_placeholders={
                     "documentation_url": "https://github.com/tserra30/Github-Copilot-SDK-integration",
+                    "default_url": DEFAULT_CLI_URL,
                 },
             )
         except Exception as exception:  # noqa: BLE001
@@ -146,37 +135,25 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 "Failed to render config flow form: %s",
                 type(exception).__name__,
             )
-            # Return error form with minimal schema to avoid further errors
             return self.async_show_form(
                 step_id="user",
                 data_schema=vol.Schema(
                     {
-                        vol.Optional(CONF_API_TOKEN, default=""): str,
+                        vol.Required(CONF_CLI_URL, default=DEFAULT_CLI_URL): str,
                     }
                 ),
                 errors={"base": "unknown"},
             )
 
-    async def _test_credentials(
+    async def _test_connection(
         self,
-        api_token: str,
+        cli_url: str,
         model: str,
-        cli_url: str = DEFAULT_CLI_URL,
     ) -> None:
-        """Validate credentials."""
-        client_options: dict[str, Any] = {}
-        if cli_url.strip():
-            # The github-copilot-sdk (>=0.1.24) supports a "cli_url" client option
-            # to connect to a remote Copilot CLI server instead of the local binary.
-            # When using cli_url, the remote server manages its own auth, so we don't
-            # pass github_token.
-            client_options["cli_url"] = cli_url.strip()
-        else:
-            # Only pass github_token when using local CLI (no cli_url)
-            client_options["github_token"] = api_token
+        """Validate connection to the Copilot add-on."""
         client = GitHubCopilotApiClient(
             model=model,
-            client_options=client_options,
+            client_options={"cli_url": cli_url},
         )
         try:
             await client.async_test_connection()
@@ -185,21 +162,18 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             GitHubCopilotApiClientCommunicationError,
             GitHubCopilotApiClientError,
         ):
-            # Re-raise our custom exceptions as-is
             raise
         except Exception as exception:
-            # Wrap any unexpected exception
             LOGGER.exception(
-                "Unexpected exception during credential test: %s",
+                "Unexpected exception during connection test: %s",
                 type(exception).__name__,
             )
             msg = (
-                f"Unexpected error during credential validation: "
+                f"Unexpected error during connection test: "
                 f"{type(exception).__name__}"
             )
             raise GitHubCopilotApiClientError(msg) from exception
         finally:
-            # Always clean up the client, even on exception
             await client.async_close()
 
 
@@ -216,7 +190,6 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
     ) -> config_entries.ConfigFlowResult:
         """Handle options flow."""
         if user_input is not None:
-            # Update the config entry with new model
             self.hass.config_entries.async_update_entry(
                 self.config_entry,
                 data={
@@ -226,7 +199,6 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
             )
             return self.async_create_entry(title="", data={})
 
-        # Get current model from config entry
         current_model = self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)
 
         return self.async_show_form(

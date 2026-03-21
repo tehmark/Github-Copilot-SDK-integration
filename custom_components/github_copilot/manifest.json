@@ -1,6 +1,6 @@
 {
   "domain": "github_copilot",
-  "name": "GitHub Copilot",
+  "name": "GitHub Copilot Bridge Integration",
   "codeowners": [
     "@tserra30"
   ],
