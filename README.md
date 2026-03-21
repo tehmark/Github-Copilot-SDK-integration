@@ -71,7 +71,7 @@ Install in this order: **add-on first, then integration**.
 4. Select a **Model** (default: `gpt-4o`)
 5. Click **Submit** — the integration will test the connection to the running add-on
 
-> If the URL doesn't work, check the add-on **Info** tab for the actual hostname and substitute it: `http://<hostname>:7681`
+> If the URL doesn't work, check the add-on **Info** tab for the actual hostname. It will look something like `56b5df53-github-copilot-bridge` (a hex prefix + your slug). Use `http://<hostname>:7681`.
 
 ## Usage
 
@@ -123,6 +123,8 @@ Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integr
 |---|---|
 | Add-on fails to start (exit code non-zero) | Add-on logs — look for the `[copilot]` lines showing the exact error |
 | "Connection refused" in HA logs | Is the add-on running? Is the URL/port correct? |
+| "Protocol version mismatch" in HA logs | Update the integration — the SDK version must match the CLI. Delete and re-add the integration after updating. |
+| "Add-on URL" field — wrong hostname | The default `local-github_copilot_bridge` may not work. Check the add-on **Info** tab for the real hostname (e.g. `56b5df53-github-copilot-bridge`) and use `http://<hostname>:7681` |
 | "Authentication failed" | Is the `github_token` in add-on config valid? Does the account have a Copilot subscription? |
 | Integration setup fails with "connection" error | Start the GitHub Copilot Bridge Addon before setting up the integration |
 | Empty or no response | Check GitHub service status; try again |

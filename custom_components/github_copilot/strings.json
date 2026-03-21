@@ -8,7 +8,7 @@
                     "model": "Model"
                 },
                 "data_description": {
-                    "cli_url": "URL of the GitHub Copilot Bridge Addon server. Default: {default_url} — find the exact hostname in the add-on Info tab.",
+                    "cli_url": "URL of the GitHub Copilot Bridge Addon server. The pre-filled hostname may not be correct — check the add-on Info tab for the actual hostname and use http://<hostname>:7681. Your hostname will look like 56b5df53-github-copilot-bridge.",
                     "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers."
                 }
             }
