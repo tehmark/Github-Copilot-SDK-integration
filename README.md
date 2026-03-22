@@ -34,7 +34,7 @@ Install in this order: **add-on first, then integration**.
 
 1. Go to **Settings** → **Add-ons** → **Add-on Store**
 2. Click **⋮** (top-right) → **Repositories**
-3. Add: `https://github.com/tserra30/Github-Copilot-SDK-integration`
+3. Add: `https://github.com/tehmark/Github-Copilot-SDK-integration`
 4. Find **GitHub Copilot Bridge Addon** and click **Install**
 5. Open the add-on **Configuration** tab and fill in your token and port:
    ```yaml
@@ -174,12 +174,12 @@ This integration depends on the [GitHub Copilot SDK](https://github.com/github/c
 
 ---
 
-[commits-shield]: https://img.shields.io/github/commit-activity/y/tserra30/Github-Copilot-SDK-integration.svg?style=for-the-badge
-[commits]: https://github.com/tserra30/Github-Copilot-SDK-integration/commits/main
+[commits-shield]: https://img.shields.io/github/commit-activity/y/tehmark/Github-Copilot-SDK-integration.svg?style=for-the-badge
+[commits]: https://github.com/tehmark/Github-Copilot-SDK-integration/commits/main
 [hacs]: https://github.com/hacs/integration
 [hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[license-shield]: https://img.shields.io/github/license/tserra30/Github-Copilot-SDK-integration.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/tserra30/Github-Copilot-SDK-integration.svg?style=for-the-badge
-[releases]: https://github.com/tserra30/Github-Copilot-SDK-integration/releases
-[issues]: https://github.com/tserra30/Github-Copilot-SDK-integration/issues
+[license-shield]: https://img.shields.io/github/license/tehmark/Github-Copilot-SDK-integration.svg?style=for-the-badge
+[releases-shield]: https://img.shields.io/github/release/tehmark/Github-Copilot-SDK-integration.svg?style=for-the-badge
+[releases]: https://github.com/tehmark/Github-Copilot-SDK-integration/releases
+[issues]: https://github.com/tehmark/Github-Copilot-SDK-integration/issues
 
