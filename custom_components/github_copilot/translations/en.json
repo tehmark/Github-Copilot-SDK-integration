@@ -47,7 +47,7 @@
                 "data_description": {
                     "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers.",
                     "mcp_url": "Optional: URL of a running ha-mcp addon. Check the ha-mcp Logs tab for your unique URL — it looks like http://192.168.1.x:9583/private_AbCd1234... and is stable (never changes). Leave blank to skip.",
-                    "instructions": "Optional: Instructions injected before every message. When an MCP URL is set, a smart default is pre-filled covering device search, fan-as-switch handling, bulk control, and voice-friendly short responses. Edit or clear to customise."
+                    "instructions": "Optional: Instructions injected before every message. When an MCP URL is set, a smart default is pre-filled optimised for gpt-5.4-mini with ha-mcp 'Enable tool search' mode ON — uses ha_search_tools for discovery and proxies for execution. Edit or clear to customise."
                 }
             }
         }
