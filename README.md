@@ -94,9 +94,11 @@ Install the **ha-mcp** addon to give Copilot 96 tools to read and control your H
    This URL is generated once and **never changes** — copy it now, you only need to do this once.
 4. Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integration** → **Configure**
 5. Paste that URL into the **MCP Server URL** field and click **Submit**
-6. In the ha-mcp addon configuration, **disable "Enable tool search"** and restart ha-mcp
+6. In the ha-mcp addon configuration, **enable "Enable tool search"** and restart ha-mcp
 
-   > **Why disable tool search?** With tool search ON, the model needs 2 round-trips per command (first search for tools, then execute). With it OFF, `claude-haiku-4.5` (the default model) can scan the full tool catalog in a single step — roughly twice as fast for HA commands.
+   > **Why enable tool search?** `claude-haiku-4.5` (the default model) lacks "deferred tool loading" — without tool search, all 96 tools (~46K tokens) are sent with every message. With tool search ON, this drops to ~5K tokens and two fast round-trips, which is quicker than one slow 46K-token call.
+   >
+   > **Using Sonnet/Opus instead?** Those models support deferred tool loading (tools load on-demand at ~0 idle cost), so you can **disable** tool search for a single round-trip per command. Note: Copilot Pro includes ~300 premium requests/month, which limits Sonnet to ~150-300 voice commands/month.
 
 Now when you chat with Copilot it can answer questions like _"Turn off all the lights in the living room"_ or _"Create an automation that runs at sunset"_ and actually execute them.
 
@@ -137,26 +139,26 @@ The model dropdown is populated **live from the Copilot CLI** when you open Conf
 
 | Model | Cost | Speed | Notes |
 |---|---|---|---|
-| `claude-haiku-4.5` | **Included** | ⚡⚡⚡ | **Default. Best for voice & HA control — native tool use, 1 round-trip per command** |
-| `gpt-5.4-mini` | **Included** | ⚡⚡⚡ | Fast GPT mini — enable "tool search" in ha-mcp when using this model |
-| `gpt-5-mini` | **Included** | ⚡⚡⚡ | Fast, included |
+| `claude-haiku-4.5` | **Included** | ⚡⚡⚡ | **Default. Best for voice & HA control — enable tool search in ha-mcp** |
+| `gpt-5.4-mini` | **Included** | ⚡⚡⚡ | Fast GPT mini — enable tool search in ha-mcp |
+| `gpt-5-mini` | **Included** | ⚡⚡⚡ | Fast, included — enable tool search in ha-mcp |
 | `gpt-5.1-codex-mini` | **Included** | ⚡⚡⚡ | Fast, code-optimised, included |
 | `gpt-4.1` | **Included** | ⚡⚡⚡ | Fast, included |
-| `gpt-5.1` | Premium | ⚡⚡ | Balanced quality |
-| `gpt-5.2` | Premium | ⚡⚡ | Balanced quality |
+| `gpt-5.1` | Premium | ⚡⚡ | Balanced quality — disable tool search (deferred tools) |
+| `gpt-5.2` | Premium | ⚡⚡ | Balanced quality — disable tool search (deferred tools) |
 | `gpt-5.1-codex` | Premium | ⚡⚡ | Code-focused |
 | `gpt-5.2-codex` | Premium | ⚡⚡ | Code-focused |
 | `gpt-5.3-codex` | Premium | ⚡⚡ | Code-focused |
-| `claude-sonnet-4` | Premium | ⚡⚡ | Anthropic Sonnet |
-| `claude-sonnet-4.5` | Premium | ⚡⚡ | Anthropic Sonnet |
-| `claude-sonnet-4.6` | Premium | ⚡⚡ | Latest Anthropic Sonnet |
+| `claude-sonnet-4` | Premium | ⚡⚡ | Anthropic Sonnet — disable tool search (deferred tools) |
+| `claude-sonnet-4.5` | Premium | ⚡⚡ | Anthropic Sonnet — disable tool search (deferred tools) |
+| `claude-sonnet-4.6` | Premium | ⚡⚡ | Latest Anthropic Sonnet — disable tool search (deferred tools) |
 | `gemini-3-pro-preview` | Premium | ⚡⚡ | Google Gemini |
 | `gpt-5.4` | Premium (high) | ⚡ | Most capable GPT |
 | `gpt-5.1-codex-max` | Premium (high) | ⚡ | Max code model |
-| `claude-opus-4.5` | Premium (high) | ⚡ | Anthropic flagship |
-| `claude-opus-4.6` | Premium (high) | ⚡ | Latest Anthropic Opus |
+| `claude-opus-4.5` | Premium (high) | ⚡ | Anthropic flagship — disable tool search (deferred tools) |
+| `claude-opus-4.6` | Premium (high) | ⚡ | Latest Anthropic Opus — disable tool search (deferred tools) |
 
-> **Tip for voice / HA control:** Use `claude-haiku-4.5` (default) — it understands MCP tools natively and handles HA commands in a single round-trip. Disable "Enable tool search" in ha-mcp for best performance. For general chat without HA control, `gpt-5.4-mini` or `gpt-5-mini` are equally fast. Check [github.com/features/copilot/plans](https://github.com/features/copilot/plans) for current model availability.
+> **Tip for voice / HA control:** Use `claude-haiku-4.5` (default) with **"Enable tool search" ON** in ha-mcp. Haiku lacks deferred tool loading, so tool search keeps context small (~5K vs 46K tokens) and response times fast. For premium models (Sonnet/Opus), disable tool search — they support deferred loading. Check [github.com/features/copilot/plans](https://github.com/features/copilot/plans) for current model availability.
 
 ## Troubleshooting
 
