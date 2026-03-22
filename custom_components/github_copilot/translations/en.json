@@ -11,7 +11,7 @@
                 "data_description": {
                     "cli_url": "URL of the GitHub Copilot Bridge Addon server. Default: http://github-copilot-bridge:7681 — this is set by the add-on's fixed hostname. Only change this if you customized the hostname.",
                     "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers.",
-                    "mcp_url": "Optional: SSE URL of a running ha-mcp addon. Check the ha-mcp Logs tab for your unique URL — it looks like http://192.168.1.x:9583/private_AbCd1234... and is stable (never changes after first start). Leave blank to skip.",
+                    "mcp_url": "Optional: SSE URL of a running ha-mcp addon. Check the ha-mcp Logs tab for your unique URL — it looks like http://192.168.1.x:9583/private_AbCd1234... and is stable (never changes after first start). Leave blank to skip."
                 }
             }
         },
@@ -36,7 +36,7 @@
                 },
                 "data_description": {
                     "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers.",
-                    "mcp_url": "Optional: URL of a running ha-mcp addon. Check the ha-mcp Logs tab for your unique URL — it looks like http://192.168.1.x:9583/private_AbCd1234... and is stable (never changes). Leave blank to skip.",,
+                    "mcp_url": "Optional: URL of a running ha-mcp addon. Check the ha-mcp Logs tab for your unique URL — it looks like http://192.168.1.x:9583/private_AbCd1234... and is stable (never changes). Leave blank to skip.",
                     "instructions": "Optional: Extra instructions appended to Copilot's system prompt every session. Use this to tell Copilot about your home — room names, device nicknames, preferences, or constraints (e.g. 'My office light is called desk_lamp. Always ask before turning off any light after 10 PM.'). Leave blank to use defaults."
                 }
             }
