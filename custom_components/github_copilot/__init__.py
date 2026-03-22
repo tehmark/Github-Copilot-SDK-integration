@@ -76,6 +76,13 @@ async def async_setup_entry(
             coordinator=coordinator,
         )
 
+        # Pre-warm the Copilot session in the background so the first user
+        # message hits a ready session (and resumes any saved session from disk).
+        hass.async_create_task(
+            entry.runtime_data.client.async_prewarm(),
+            name="github_copilot_session_prewarm",
+        )
+
         # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
         await coordinator.async_config_entry_first_refresh()
 

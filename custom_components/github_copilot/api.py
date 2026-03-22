@@ -56,7 +56,9 @@ class GitHubCopilotApiClient:
         self._client_options = client_options or {}
         self._client: CopilotClient | None = None
         self._sessions: dict[str, CopilotSessionContext] = {}
+        self._shared_session: CopilotSessionContext | None = None
         self._session_lock = asyncio.Lock()
+        self._shared_session_lock = asyncio.Lock()
         self._client_lock = asyncio.Lock()
 
     async def async_test_connection(self) -> bool:
@@ -168,6 +170,81 @@ class GitHubCopilotApiClient:
             self._model,
         )
         return session_context
+
+    async def async_get_shared_session(self) -> CopilotSessionContext:
+        """Get the shared persistent session, resuming or creating it as needed."""
+        # Fast path: no lock needed if already set (atomic reference read in CPython)
+        if self._shared_session is not None:
+            return self._shared_session
+        async with self._shared_session_lock:
+            # Double-check after acquiring lock to prevent concurrent creation
+            if self._shared_session is not None:
+                return self._shared_session
+            session = await self._try_resume_or_create_session()
+            self._shared_session = session
+            return session
+
+    async def _try_resume_or_create_session(self) -> CopilotSessionContext:
+        """Try to resume the CLI's last saved session, falling back to a fresh one."""
+        client = await self._ensure_client()
+        mcp_url = self._client_options.get("mcp_url", "").strip()
+        instructions = self._client_options.get("instructions", "").strip()
+        mcp_servers = None
+        if mcp_url:
+            mcp_servers = {
+                "home_assistant": {
+                    "type": "http",
+                    "url": mcp_url,
+                    "tools": ["*"],
+                }
+            }
+
+        try:
+            last_id = await client.get_last_session_id()
+            if last_id:
+                LOGGER.debug("Attempting to resume last Copilot session %s...", last_id)
+                copilot_session = await client.resume_session(
+                    last_id,
+                    on_permission_request=PermissionHandler.approve_all,
+                    model=self._model,
+                    mcp_servers=mcp_servers,
+                )
+                session_context = CopilotSessionContext(
+                    session_id=last_id,
+                    copilot_session=copilot_session,
+                    mcp_url=mcp_url,
+                    instructions=instructions,
+                )
+                async with self._session_lock:
+                    self._sessions[last_id] = session_context
+                LOGGER.info("Resumed previous Copilot session %s", last_id)
+                return session_context
+        except Exception as err:
+            LOGGER.warning(
+                "Could not resume previous session (%s: %s), creating new session",
+                type(err).__name__,
+                str(err),
+            )
+
+        return await self.async_create_session()
+
+    async def async_prewarm(self) -> None:
+        """Pre-warm the shared session at startup. Called as a background task."""
+        LOGGER.debug("Pre-warming Copilot session in background...")
+        try:
+            await self.async_get_shared_session()
+            LOGGER.info("Copilot session pre-warmed and ready")
+        except Exception as err:
+            LOGGER.warning(
+                "Session pre-warm failed (will retry on first use): %s - %s",
+                type(err).__name__,
+                str(err),
+            )
+
+    def invalidate_shared_session(self) -> None:
+        """Invalidate the shared session so it will be recreated on next use."""
+        LOGGER.debug("Invalidating shared Copilot session — will recreate on next use")
+        self._shared_session = None
 
     async def async_end_session(self, session_id: str) -> None:
         """Disconnect a Copilot SDK session."""
@@ -312,6 +389,8 @@ class GitHubCopilotApiClient:
 
     async def async_close(self) -> None:
         """Close the Copilot SDK client and all sessions."""
+        # Clear shared session reference first so no new uses start
+        self._shared_session = None
         async with self._session_lock:
             session_ids = list(self._sessions.keys())
         for session_id in session_ids:

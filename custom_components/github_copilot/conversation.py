@@ -71,18 +71,21 @@ class GitHubCopilotConversationEntity(conversation.ConversationEntity):
             )
             return
 
-        # Clean up all sessions
-        session_ids = list(self.sessions.keys())
-        for session_id in session_ids:
-            try:
-                await client.async_end_session(session_id)
-                LOGGER.debug("Cleaned up session %s", session_id)
-            except Exception as err:  # noqa: BLE001
-                LOGGER.error(
-                    "Failed to clean up session %s: %s",
-                    session_id,
-                    type(err).__name__,
-                )
+        # All conversation IDs point to the same shared session — clean it up once
+        ended_ids: set[str] = set()
+        for session_context in self.sessions.values():
+            sid = session_context.session_id
+            if sid not in ended_ids:
+                ended_ids.add(sid)
+                try:
+                    await client.async_end_session(sid)
+                    LOGGER.debug("Cleaned up session %s", sid)
+                except Exception as err:  # noqa: BLE001
+                    LOGGER.error(
+                        "Failed to clean up session %s: %s",
+                        sid,
+                        type(err).__name__,
+                    )
         self.sessions.clear()
         self._session_last_used.clear()
 
@@ -155,7 +158,7 @@ class GitHubCopilotConversationEntity(conversation.ConversationEntity):
         session_context: CopilotSessionContext | None = None
         try:
             client = self.entry.runtime_data.client
-            session_context = await client.async_create_session()
+            session_context = await client.async_get_shared_session()
             self.sessions[conversation_id] = session_context
             self._session_last_used[conversation_id] = time.time()
         except GitHubCopilotApiClientAuthenticationError as err:
@@ -241,8 +244,9 @@ class GitHubCopilotConversationEntity(conversation.ConversationEntity):
             )
         except GitHubCopilotApiClientAuthenticationError as err:
             LOGGER.error("Authentication error during conversation: %s", err)
-            self.sessions.pop(conversation_id, None)
-            self._session_last_used.pop(conversation_id, None)
+            client.invalidate_shared_session()
+            self.sessions.clear()
+            self._session_last_used.clear()
             result = self._create_error_result(
                 user_input.language,
                 conversation_id,
@@ -251,8 +255,9 @@ class GitHubCopilotConversationEntity(conversation.ConversationEntity):
             )
         except GitHubCopilotApiClientCommunicationError as err:
             LOGGER.error("Communication error during conversation: %s", err)
-            self.sessions.pop(conversation_id, None)
-            self._session_last_used.pop(conversation_id, None)
+            client.invalidate_shared_session()
+            self.sessions.clear()
+            self._session_last_used.clear()
             result = self._create_error_result(
                 user_input.language,
                 conversation_id,
@@ -261,8 +266,9 @@ class GitHubCopilotConversationEntity(conversation.ConversationEntity):
             )
         except GitHubCopilotApiClientError as err:
             LOGGER.error("Error processing conversation: %s", err)
-            self.sessions.pop(conversation_id, None)
-            self._session_last_used.pop(conversation_id, None)
+            client.invalidate_shared_session()
+            self.sessions.clear()
+            self._session_last_used.clear()
             result = self._create_error_result(
                 user_input.language,
                 conversation_id,
