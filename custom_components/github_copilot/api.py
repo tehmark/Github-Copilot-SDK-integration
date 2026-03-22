@@ -7,8 +7,8 @@ from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from copilot import CopilotClient, ExternalServerConfig, PermissionHandler
-import copilot
+from .copilot_sdk import CopilotClient, ExternalServerConfig, PermissionHandler
+from .copilot_sdk.session import CopilotSession
 
 from .const import LOGGER
 
@@ -37,7 +37,7 @@ class CopilotSessionContext:
     """In-memory session context for Copilot SDK conversations."""
 
     session_id: str
-    copilot_session: copilot.CopilotSession
+    copilot_session: CopilotSession
 
 
 class GitHubCopilotApiClient:

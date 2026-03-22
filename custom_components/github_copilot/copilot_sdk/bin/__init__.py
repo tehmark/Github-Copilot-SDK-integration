@@ -1,0 +1,1 @@
+"""Bundled Copilot CLI binary."""
