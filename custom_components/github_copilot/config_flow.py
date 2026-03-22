@@ -22,6 +22,7 @@ from .const import (
     CONF_INSTRUCTIONS,
     DEFAULT_CLI_URL,
     DEFAULT_MODEL,
+    DEFAULT_HA_INSTRUCTIONS,
     DOMAIN,
     LOGGER,
     SUPPORTED_MODELS,
@@ -212,6 +213,10 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
         current_model = self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)
         current_mcp_url = self.config_entry.data.get(CONF_MCP_URL, "")
         current_instructions = self.config_entry.data.get(CONF_INSTRUCTIONS, "")
+
+        # If ha-mcp is configured but instructions are blank, suggest the default set.
+        if current_mcp_url and not current_instructions:
+            current_instructions = DEFAULT_HA_INSTRUCTIONS
 
         return self.async_show_form(
             step_id="init",

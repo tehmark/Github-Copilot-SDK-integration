@@ -52,6 +52,21 @@ DEFAULT_HA_SYSTEM_PROMPT = (
     "short clarifying question before acting."
 )
 
+# Default custom instructions pre-populated when ha-mcp is configured.
+# Optimised for voice assistant use: short responses, no emoji/markdown, fuzzy device search.
+DEFAULT_HA_INSTRUCTIONS = (
+    "When controlling or querying Home Assistant:\n"
+    "- Always use ha_search_entities to find entities before calling services. "
+    "Be fuzzy with search terms — a ceiling fan may be a switch.* entity with 'fan' in the name, not a fan.* entity.\n"
+    "- When the user says 'all X' (e.g. 'all lights', 'all fans'), use ha_bulk_control to affect multiple entities at once.\n"
+    "- For simple on/off/toggle commands, act immediately without asking for confirmation. "
+    "After acting, briefly report what you did in one sentence (e.g. 'Turned on 3 fans in the house.').\n"
+    "- If a search returns no results, try alternate terms (e.g. 'ceiling', 'lamp', 'overhead', 'switch').\n"
+    "- When asked about a room or area, search with the room name to find all relevant entities.\n"
+    "- Keep all responses short and conversational — responses are read aloud via voice assistant. "
+    "One or two sentences maximum. Do not use emoji, bullet points, or markdown formatting."
+)
+
 
 # API constants
 API_TIMEOUT = 30  # Timeout in seconds for API requests
