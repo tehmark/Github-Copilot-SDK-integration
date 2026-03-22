@@ -167,7 +167,7 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
                 errors=_errors,
                 description_placeholders={
-                    "documentation_url": "https://github.com/tserra30/Github-Copilot-SDK-integration",
+                    "documentation_url": "https://github.com/tehmark/Github-Copilot-SDK-integration",
                     "default_url": DEFAULT_CLI_URL,
                 },
             )

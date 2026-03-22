@@ -285,7 +285,7 @@ When adding new features:
 
 - [Home Assistant Developer Documentation](https://developers.home-assistant.io/)
 - [Integration Blueprint](https://github.com/ludeeus/integration_blueprint)
-- Repository issues: https://github.com/tserra30/Github-Copilot-SDK-integration/issues
+- Repository issues: https://github.com/tehmark/Github-Copilot-SDK-integration/issues
 - Contributing guidelines: See CONTRIBUTING.md
 
 ## Instructions for Coding Agents

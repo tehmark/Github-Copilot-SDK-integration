@@ -2,7 +2,7 @@
 Custom integration to integrate GitHub Copilot with Home Assistant.
 
 For more details about this integration, please refer to
-https://github.com/tserra30/Github-Copilot-SDK-integration
+https://github.com/tehmark/Github-Copilot-SDK-integration
 """
 
 from __future__ import annotations
