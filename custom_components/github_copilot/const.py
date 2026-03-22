@@ -14,7 +14,7 @@ CONF_MCP_URL = "mcp_url"
 CONF_INSTRUCTIONS = "instructions"
 
 # Default values
-DEFAULT_MODEL = "gpt-5.4-mini"
+DEFAULT_MODEL = "claude-haiku-4.5"
 DEFAULT_CLI_URL = "http://github-copilot-bridge:7681"
 
 # Fallback model list used when the live Copilot CLI is unreachable.
@@ -23,11 +23,11 @@ DEFAULT_CLI_URL = "http://github-copilot-bridge:7681"
 # ⚡ = fast/low-latency  ✓ = included (no premium cost)  $ = uses premium request budget
 SUPPORTED_MODELS = [
     # --- Fast / Included (recommended for voice & HA control) ---
-    {"value": "gpt-5.4-mini",        "label": "gpt-5.4-mini ⚡✓ — fastest, included (recommended for voice)"},
+    {"value": "claude-haiku-4.5",    "label": "claude-haiku-4.5 ⚡✓ — fastest Anthropic model, best for voice & HA control (recommended)"},
+    {"value": "gpt-5.4-mini",        "label": "gpt-5.4-mini ⚡✓ — fastest GPT, included (requires tool search mode in ha-mcp)"},
     {"value": "gpt-5-mini",          "label": "gpt-5-mini ⚡✓ — fast, included"},
     {"value": "gpt-5.1-codex-mini",  "label": "gpt-5.1-codex-mini ⚡✓ — fast, code-optimised, included"},
     {"value": "gpt-4.1",             "label": "gpt-4.1 ⚡✓ — fast, included"},
-    {"value": "claude-haiku-4.5",    "label": "claude-haiku-4.5 ⚡✓ — fast Anthropic model, included"},
     # --- Balanced quality / premium ---
     {"value": "gpt-5.1",             "label": "gpt-5.1 $ — balanced quality, premium requests"},
     {"value": "gpt-5.2",             "label": "gpt-5.2 $ — balanced quality, premium requests"},
@@ -63,24 +63,21 @@ DEFAULT_HA_SYSTEM_PROMPT = (
 )
 
 # Default custom instructions pre-populated when ha-mcp is configured.
-# Optimised for gpt-5.4-mini with ha-mcp "Enable tool search" mode ON.
-# In tool search mode, ha_search_tools discovers available tools; proxies execute them.
+# Optimised for claude-haiku-4.5 with ha-mcp "Enable tool search" mode OFF (direct tool access).
+# With tool search disabled, all HA tools are available directly — no search step needed.
 DEFAULT_HA_INSTRUCTIONS = (
     "When controlling or querying Home Assistant:\n"
-    "- Always call ha_search_tools first to find the right tool for the task. "
-    "Use descriptive search terms — e.g. 'turn on light', 'get sensor state', 'run script'.\n"
-    "- Be fuzzy with device names. A ceiling fan may be a switch entity with 'fan' in the name, "
-    "not a fan entity. Try 'fan', 'ceiling', 'switch' if the first search finds nothing.\n"
-    "- Use the write proxy for on/off/toggle/set actions. Use the read proxy for state queries. "
-    "Use the delete proxy only for removing things.\n"
-    "- For 'all X' requests (e.g. 'all lights', 'all fans'), search broadly and call the write proxy "
-    "for each matching entity, or find a bulk tool if available.\n"
-    "- For simple on/off/toggle commands, act immediately without asking for confirmation. "
-    "After acting, briefly report what you did in one sentence (e.g. 'Turned on 3 fans in the house.').\n"
-    "- If a search returns no results, retry with alternate terms "
-    "(e.g. 'ceiling', 'lamp', 'overhead', 'switch').\n"
+    "- Use the available Home Assistant tools directly — they are already in your context. "
+    "Do not search for tools; select the right one based on its description and the task.\n"
+    "- Act immediately for simple on/off/toggle/set commands. Do not ask for confirmation.\n"
+    "- Be fuzzy with device names. A ceiling fan may be a 'switch' entity with 'fan' in the name, "
+    "not a fan entity. Try related entity types and name variations if the first attempt finds nothing.\n"
+    "- For 'all X' requests (e.g. 'all lights', 'all fans'), find all matching entities and "
+    "act on each one, or use a bulk/group action tool if available.\n"
+    "- After acting, confirm in one sentence what you did "
+    "(e.g. 'Turned on 3 lights in the living room.').\n"
     "- Keep all responses short and conversational — responses are read aloud via voice assistant. "
-    "One or two sentences maximum. Do not use emoji, bullet points, or markdown formatting."
+    "One or two sentences maximum. No emoji, bullet points, or markdown."
 )
 
 

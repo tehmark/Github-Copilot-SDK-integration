@@ -98,12 +98,16 @@ class GitHubCopilotApiClient:
             LOGGER.debug("Creating session with ha-mcp at %s", mcp_url)
 
         # Build the system message. When MCP is configured we inject the HA context
-        # prompt so Copilot proactively uses the tools without being told every turn.
+        # prompt so Copilot proactively uses the tools.
         # Any user-provided custom instructions are appended on top.
         system_message: dict | None = None
         parts: list[str] = []
         if mcp_url:
             parts.append(DEFAULT_HA_SYSTEM_PROMPT)
+            parts.append(
+                "Your Home Assistant MCP server is registered and available as tools "
+                "in this session. Use the tools directly by name — no URL is needed."
+            )
         if instructions:
             parts.append(instructions)
         if parts:
@@ -369,22 +373,9 @@ class GitHubCopilotApiClient:
 
         return response_content[-1]
 
-    def _build_prompt(self, user_message: str, session: CopilotSessionContext) -> str:
-        """Prepend per-message context so Copilot always sees the MCP address and instructions."""
-        context_parts: list[str] = []
-        if session.mcp_url:
-            context_parts.append(
-                f"[Home Assistant context]\n"
-                f"You have access to a Home Assistant MCP server at: {session.mcp_url}\n"
-                f"Use its tools to answer questions about or take actions in the user's home. "
-                f"Always use the tools rather than just describing what could be done."
-            )
-        if session.instructions:
-            context_parts.append(f"[Custom instructions]\n{session.instructions}")
-        if not context_parts:
-            return user_message
-        context_block = "\n\n".join(context_parts)
-        return f"{context_block}\n\n[User message]\n{user_message}"
+    def _build_prompt(self, user_message: str, session: CopilotSessionContext) -> str:  # noqa: ARG002
+        """Return the user message unchanged — context is in the session system message."""
+        return user_message
 
     async def async_close(self) -> None:
         """Close the Copilot SDK client and all sessions."""

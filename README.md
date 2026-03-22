@@ -68,7 +68,7 @@ Install in this order: **add-on first, then integration**.
 1. Go to **Settings** → **Devices & Services** → **Add Integration**
 2. Search for **GitHub Copilot Bridge Integration**
 3. The **Add-on URL** field is pre-filled with `http://github-copilot-bridge:7681` — this is the fixed hostname set in the add-on
-4. Select a **Model** — after the connection is tested, the dropdown updates to show only models available on your account. Default: `gpt-5.4-mini` (fastest, no premium cost)
+4. Select a **Model** — after the connection is tested, the dropdown updates to show only models available on your account. Default: `claude-haiku-4.5` (fastest Anthropic model, best tool use for HA control, no premium cost)
 5. Click **Submit** — the integration will test the connection to the running add-on
 
 > If the URL doesn't work, check the add-on **Info** tab for the actual hostname. It will look something like `56b5df53-github-copilot-bridge` (a hex prefix + your slug). Use `http://<hostname>:7681`.
@@ -94,6 +94,9 @@ Install the **ha-mcp** addon to give Copilot 96 tools to read and control your H
    This URL is generated once and **never changes** — copy it now, you only need to do this once.
 4. Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integration** → **Configure**
 5. Paste that URL into the **MCP Server URL** field and click **Submit**
+6. In the ha-mcp addon configuration, **disable "Enable tool search"** and restart ha-mcp
+
+   > **Why disable tool search?** With tool search ON, the model needs 2 round-trips per command (first search for tools, then execute). With it OFF, `claude-haiku-4.5` (the default model) can scan the full tool catalog in a single step — roughly twice as fast for HA commands.
 
 Now when you chat with Copilot it can answer questions like _"Turn off all the lights in the living room"_ or _"Create an automation that runs at sunset"_ and actually execute them.
 
@@ -134,11 +137,11 @@ The model dropdown is populated **live from the Copilot CLI** when you open Conf
 
 | Model | Cost | Speed | Notes |
 |---|---|---|---|
-| `gpt-5.4-mini` | **Included** | ⚡⚡⚡ | **Default. Fastest — recommended for voice & HA control** |
+| `claude-haiku-4.5` | **Included** | ⚡⚡⚡ | **Default. Best for voice & HA control — native tool use, 1 round-trip per command** |
+| `gpt-5.4-mini` | **Included** | ⚡⚡⚡ | Fast GPT mini — enable "tool search" in ha-mcp when using this model |
 | `gpt-5-mini` | **Included** | ⚡⚡⚡ | Fast, included |
 | `gpt-5.1-codex-mini` | **Included** | ⚡⚡⚡ | Fast, code-optimised, included |
 | `gpt-4.1` | **Included** | ⚡⚡⚡ | Fast, included |
-| `claude-haiku-4.5` | **Included** | ⚡⚡⚡ | Fast Anthropic model, included |
 | `gpt-5.1` | Premium | ⚡⚡ | Balanced quality |
 | `gpt-5.2` | Premium | ⚡⚡ | Balanced quality |
 | `gpt-5.1-codex` | Premium | ⚡⚡ | Code-focused |
@@ -153,7 +156,7 @@ The model dropdown is populated **live from the Copilot CLI** when you open Conf
 | `claude-opus-4.5` | Premium (high) | ⚡ | Anthropic flagship |
 | `claude-opus-4.6` | Premium (high) | ⚡ | Latest Anthropic Opus |
 
-> **Tip for voice / HA control:** Use `gpt-5.4-mini` — it is the fastest model, included at no extra cost, and handles quick commands well. For more reasoning without sacrificing too much speed, try `claude-haiku-4.5` or `gpt-5.1`. Check [github.com/features/copilot/plans](https://github.com/features/copilot/plans) for current model availability.
+> **Tip for voice / HA control:** Use `claude-haiku-4.5` (default) — it understands MCP tools natively and handles HA commands in a single round-trip. Disable "Enable tool search" in ha-mcp for best performance. For general chat without HA control, `gpt-5.4-mini` or `gpt-5-mini` are equally fast. Check [github.com/features/copilot/plans](https://github.com/features/copilot/plans) for current model availability.
 
 ## Troubleshooting
 
