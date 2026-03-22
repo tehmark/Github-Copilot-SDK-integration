@@ -19,6 +19,7 @@ from .const import (
     CONF_CLI_URL,
     CONF_MODEL,
     CONF_MCP_URL,
+    CONF_INSTRUCTIONS,
     DEFAULT_CLI_URL,
     DEFAULT_MODEL,
     DOMAIN,
@@ -207,12 +208,14 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
                     **self.config_entry.data,
                     CONF_MODEL: user_input[CONF_MODEL],
                     CONF_MCP_URL: user_input.get(CONF_MCP_URL, "").strip(),
+                    CONF_INSTRUCTIONS: user_input.get(CONF_INSTRUCTIONS, "").strip(),
                 },
             )
             return self.async_create_entry(title="", data={})
 
         current_model = self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)
         current_mcp_url = self.config_entry.data.get(CONF_MCP_URL, "")
+        current_instructions = self.config_entry.data.get(CONF_INSTRUCTIONS, "")
 
         return self.async_show_form(
             step_id="init",
@@ -233,6 +236,14 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
                     ): selector.TextSelector(
                         selector.TextSelectorConfig(
                             type=selector.TextSelectorType.URL,
+                        ),
+                    ),
+                    vol.Optional(
+                        CONF_INSTRUCTIONS,
+                        default=current_instructions,
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            multiline=True,
                         ),
                     ),
                 }

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 from .copilot_sdk import CopilotClient, ExternalServerConfig, PermissionHandler
 from .copilot_sdk.session import CopilotSession
 
-from .const import LOGGER
+from .const import DEFAULT_HA_SYSTEM_PROMPT, LOGGER
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -38,6 +38,8 @@ class CopilotSessionContext:
 
     session_id: str
     copilot_session: CopilotSession
+    mcp_url: str = ""
+    instructions: str = ""
 
 
 class GitHubCopilotApiClient:
@@ -81,21 +83,42 @@ class GitHubCopilotApiClient:
         """Create a Copilot SDK session."""
         client = await self._ensure_client()
         mcp_url = self._client_options.get("mcp_url", "").strip()
+        instructions = self._client_options.get("instructions", "").strip()
+
         mcp_servers = None
         if mcp_url:
             mcp_servers = {
                 "home_assistant": {
-                    "type": "sse",
+                    "type": "http",
                     "url": mcp_url,
                     "tools": ["*"],
                 }
             }
             LOGGER.debug("Creating session with ha-mcp at %s", mcp_url)
+
+        # Build the system message. When MCP is configured we inject the HA context
+        # prompt so Copilot proactively uses the tools without being told every turn.
+        # Any user-provided custom instructions are appended on top.
+        system_message: dict | None = None
+        parts: list[str] = []
+        if mcp_url:
+            parts.append(DEFAULT_HA_SYSTEM_PROMPT)
+        if instructions:
+            parts.append(instructions)
+        if parts:
+            system_message = {"mode": "append", "content": "\n\n".join(parts)}
+            LOGGER.debug(
+                "Session system message (%d chars): %.120s...",
+                len(system_message["content"]),
+                system_message["content"],
+            )
+
         try:
             copilot_session = await client.create_session(
                 on_permission_request=PermissionHandler.approve_all,
                 model=self._model,
                 mcp_servers=mcp_servers,
+                system_message=system_message,
             )
         except TimeoutError as exception:
             LOGGER.error(
@@ -134,6 +157,8 @@ class GitHubCopilotApiClient:
         session_context = CopilotSessionContext(
             session_id=copilot_session.session_id,
             copilot_session=copilot_session,
+            mcp_url=mcp_url,
+            instructions=instructions,
         )
         async with self._session_lock:
             self._sessions[session_context.session_id] = session_context
@@ -174,6 +199,10 @@ class GitHubCopilotApiClient:
             LOGGER.error(msg)
             raise GitHubCopilotApiClientError(msg)
 
+        # Build per-message context block so Copilot always sees MCP info and
+        # custom instructions even deep into a long conversation.
+        effective_prompt = self._build_prompt(prompt, session)
+
         done = asyncio.Event()
         response_content: list[str] = []
 
@@ -211,9 +240,9 @@ class GitHubCopilotApiClient:
             LOGGER.debug(
                 "Sending prompt to session %s: %.80s...",
                 session_id,
-                prompt,
+                effective_prompt,
             )
-            await session.copilot_session.send(prompt)
+            await session.copilot_session.send(effective_prompt)
             try:
                 await asyncio.wait_for(done.wait(), timeout=120.0)
             except TimeoutError as exception:
@@ -263,6 +292,23 @@ class GitHubCopilotApiClient:
             raise GitHubCopilotApiClientError(msg)
 
         return response_content[-1]
+
+    def _build_prompt(self, user_message: str, session: CopilotSessionContext) -> str:
+        """Prepend per-message context so Copilot always sees the MCP address and instructions."""
+        context_parts: list[str] = []
+        if session.mcp_url:
+            context_parts.append(
+                f"[Home Assistant context]\n"
+                f"You have access to a Home Assistant MCP server at: {session.mcp_url}\n"
+                f"Use its tools to answer questions about or take actions in the user's home. "
+                f"Always use the tools rather than just describing what could be done."
+            )
+        if session.instructions:
+            context_parts.append(f"[Custom instructions]\n{session.instructions}")
+        if not context_parts:
+            return user_message
+        context_block = "\n\n".join(context_parts)
+        return f"{context_block}\n\n[User message]\n{user_message}"
 
     async def async_close(self) -> None:
         """Close the Copilot SDK client and all sessions."""

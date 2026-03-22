@@ -11,6 +11,7 @@ ATTRIBUTION = "Powered by GitHub Copilot SDK"
 CONF_MODEL = "model"
 CONF_CLI_URL = "cli_url"
 CONF_MCP_URL = "mcp_url"
+CONF_INSTRUCTIONS = "instructions"
 
 # Default values
 DEFAULT_MODEL = "gpt-4o"
@@ -36,6 +37,20 @@ SUPPORTED_MODELS = [
 
 # Plain list of model IDs for validation logic
 SUPPORTED_MODEL_IDS = [m["value"] for m in SUPPORTED_MODELS]
+
+# Default system message appended when ha-mcp is configured.
+# Tells Copilot it's acting as a Home Assistant agent and should use MCP tools proactively.
+DEFAULT_HA_SYSTEM_PROMPT = (
+    "You are a smart home assistant integrated into Home Assistant. "
+    "You have access to a set of Home Assistant MCP tools that let you read and control "
+    "devices, entities, automations, scripts, scenes, and dashboards in the user's home. "
+    "When the user asks about their home, devices, lights, climate, sensors, or wants to "
+    "control anything in their house, use these tools proactively — do not just describe "
+    "what you could do, actually do it. "
+    "Always confirm what you did after completing an action. "
+    "If a request is ambiguous (e.g. 'the lights' could mean multiple rooms), ask a "
+    "short clarifying question before acting."
+)
 
 
 # API constants

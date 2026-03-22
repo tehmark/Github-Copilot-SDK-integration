@@ -87,16 +87,29 @@ Install the **ha-mcp** addon to give Copilot 96 tools to read and control your H
 
 1. Add the ha-mcp repository: **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories** → add `https://github.com/homeassistant-ai/ha-mcp`
 2. Install **Home Assistant MCP Server** and click **Start**
-3. Open the ha-mcp **Log** tab — you'll see a line like:
+3. Open the ha-mcp **Log** tab — you'll see your unique URL:
    ```
-   MCP server URL: http://local-home-assistant-mcp-server:11434/sse
+   🔐 MCP Server URL: http://192.168.1.x:9583/private_AbCdEfGh1234...
    ```
+   This URL is generated once and **never changes** — copy it now, you only need to do this once.
 4. Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integration** → **Configure**
 5. Paste that URL into the **MCP Server URL** field and click **Submit**
 
 Now when you chat with Copilot it can answer questions like _"Turn off all the lights in the living room"_ or _"Create an automation that runs at sunset"_ and actually execute them.
 
 > **Note**: ha-mcp connects to Home Assistant automatically when installed as an addon — no separate token is needed.
+
+### Custom Instructions (optional)
+
+You can teach Copilot about your specific home by adding **Custom Instructions** in the Configure dialog (**Settings → Devices & Services → GitHub Copilot Bridge Integration → Configure**).
+
+Use this to describe:
+- Room or device names that differ from HA entity IDs (e.g. _"The light called 'desk_lamp' is in my office"_)
+- Personal preferences (e.g. _"I prefer temperatures in Celsius"_)
+- Behavioural rules (e.g. _"Always ask for confirmation before turning off any device after 10 PM"_)
+- Anything else Copilot should remember in every conversation
+
+These instructions are injected before every message sent to Copilot, so it always has them in view — even deep into a long conversation. When ha-mcp is also configured, the MCP server address is automatically included so Copilot knows exactly where to find your Home Assistant tools without you having to say so.
 
 ### Automation example
 
