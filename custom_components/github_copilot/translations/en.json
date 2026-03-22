@@ -10,7 +10,7 @@
                 },
                 "data_description": {
                     "cli_url": "URL of the GitHub Copilot Bridge Addon server. Default: http://github-copilot-bridge:7681 — this is set by the add-on's fixed hostname. Only change this if you customized the hostname.",
-                    "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers.",
+                    "model": "Select the model to use. After a successful connection test, the list is refreshed to show only models available on your account. If the model you chose isn't available, you'll be prompted to pick again.",
                     "mcp_url": "Optional: SSE URL of a running ha-mcp addon. Check the ha-mcp Logs tab for your unique URL — it looks like http://192.168.1.x:9583/private_AbCd1234... and is stable (never changes after first start). Leave blank to skip."
                 }
             }
@@ -20,6 +20,7 @@
             "auth": "Authentication failed. Check that the GitHub token set in the add-on options is valid and has Copilot permissions.",
             "connection": "Unable to connect to the GitHub Copilot Bridge Addon. Ensure it is installed, running, and the URL is correct (e.g. {default_url}).",
             "invalid_url": "Invalid URL. Enter a valid HTTP or HTTPS address for the GitHub Copilot Bridge Addon (e.g. {default_url}).",
+            "model_unavailable": "That model is not available on your Copilot account. The list has been updated — please select an available model.",
             "unknown": "An unexpected error occurred. Please check the Home Assistant logs for details."
         },
         "abort": {

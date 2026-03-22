@@ -51,8 +51,10 @@ async def async_setup_entry(
             update_interval=timedelta(hours=1),
         )
         cli_url = entry.data.get(CONF_CLI_URL, DEFAULT_CLI_URL).strip()
-        mcp_url = entry.data.get(CONF_MCP_URL, "").strip()
-        instructions = entry.data.get(CONF_INSTRUCTIONS, "").strip()
+        # Prefer options (updated via Configure dialog) over data (initial setup)
+        mcp_url = (entry.options.get(CONF_MCP_URL) or entry.data.get(CONF_MCP_URL, "")).strip()
+        instructions = (entry.options.get(CONF_INSTRUCTIONS) or entry.data.get(CONF_INSTRUCTIONS, "")).strip()
+        model = entry.options.get(CONF_MODEL) or entry.data.get(CONF_MODEL, DEFAULT_MODEL)
         if not cli_url:
             LOGGER.error(
                 "No Copilot CLI URL in config entry — cannot set up integration. "
@@ -66,10 +68,10 @@ async def async_setup_entry(
             )
         if instructions:
             LOGGER.debug("Custom instructions configured (%d chars)", len(instructions))
-        LOGGER.debug("Setting up GitHub Copilot integration with add-on URL: %s", cli_url)
+        LOGGER.debug("Setting up GitHub Copilot integration with add-on URL: %s, model: %s", cli_url, model)
         entry.runtime_data = GitHubCopilotData(
             client=GitHubCopilotApiClient(
-                model=entry.data.get(CONF_MODEL, DEFAULT_MODEL),
+                model=model,
                 client_options={"cli_url": cli_url, "mcp_url": mcp_url, "instructions": instructions},
             ),
             integration=async_get_loaded_integration(hass, entry.domain),

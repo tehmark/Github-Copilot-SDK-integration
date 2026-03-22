@@ -35,6 +35,13 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self) -> None:
+        """Initialize flow handler."""
+        super().__init__()
+        # Populated after a successful connection test — used to show live models
+        # when the initially-selected model isn't available.
+        self._live_models: list[dict[str, str]] | None = None
+
     @staticmethod
     def async_get_options_flow(
         config_entry: config_entries.ConfigEntry,  # noqa: ARG004
@@ -67,7 +74,16 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         cli_url,
                         model,
                     )
-                    await self._test_connection(cli_url=cli_url, model=model)
+                    live_model_ids = await self._test_connection(cli_url=cli_url, model=model)
+                    if live_model_ids and model not in live_model_ids:
+                        # Model isn't available on this account — re-show with live list
+                        LOGGER.warning(
+                            "Selected model '%s' not in live model list %s",
+                            model,
+                            live_model_ids,
+                        )
+                        self._live_models = [{"value": m, "label": m} for m in live_model_ids]
+                        _errors[CONF_MODEL] = "model_unavailable"
                 except GitHubCopilotApiClientAuthenticationError as exception:
                     LOGGER.warning(
                         "GitHub Copilot authentication failed: %s",
@@ -93,19 +109,31 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                     _errors["base"] = "unknown"
                 else:
-                    await self.async_set_unique_id("github_copilot")
-                    self._abort_if_unique_id_configured()
-                    LOGGER.info(
-                        "GitHub Copilot integration configured (add-on: '%s', model: '%s')",
-                        cli_url,
-                        model,
-                    )
-                    return self.async_create_entry(
-                        title="GitHub Copilot Bridge Integration",
-                        data=user_input,
-                    )
+                    if not _errors:
+                        await self.async_set_unique_id("github_copilot")
+                        self._abort_if_unique_id_configured()
+                        LOGGER.info(
+                            "GitHub Copilot integration configured (add-on: '%s', model: '%s')",
+                            cli_url,
+                            model,
+                        )
+                        return self.async_create_entry(
+                            title="GitHub Copilot Bridge Integration",
+                            data=user_input,
+                        )
 
         try:
+            # Use live model list if we fetched one (model was invalid), else static fallback
+            model_options = self._live_models or list(SUPPORTED_MODELS)
+            default_model = DEFAULT_MODEL
+            if user_input:
+                prev_model = user_input.get(CONF_MODEL, DEFAULT_MODEL)
+                # Keep user's choice if it's valid, otherwise suggest first live model
+                if any(o["value"] == prev_model for o in model_options):
+                    default_model = prev_model
+                elif model_options:
+                    default_model = model_options[0]["value"]
+
             return self.async_show_form(
                 step_id="user",
                 data_schema=vol.Schema(
@@ -120,10 +148,10 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         ),
                         vol.Optional(
                             CONF_MODEL,
-                            default=DEFAULT_MODEL,
+                            default=default_model,
                         ): selector.SelectSelector(
                             selector.SelectSelectorConfig(
-                                options=SUPPORTED_MODELS,  # type: ignore[arg-type]
+                                options=model_options,  # type: ignore[arg-type]
                                 mode=selector.SelectSelectorMode.DROPDOWN,
                             ),
                         ),
@@ -162,14 +190,18 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self,
         cli_url: str,
         model: str,
-    ) -> None:
-        """Validate connection to the Copilot add-on."""
+    ) -> list[str]:
+        """Validate connection to the Copilot add-on and return available model IDs."""
         client = GitHubCopilotApiClient(
             model=model,
             client_options={"cli_url": cli_url},
         )
         try:
             await client.async_test_connection()
+            try:
+                return await client.async_available_models()
+            except Exception:  # noqa: BLE001
+                return []
         except (
             GitHubCopilotApiClientAuthenticationError,
             GitHubCopilotApiClientCommunicationError,
@@ -199,24 +231,35 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
     ) -> config_entries.ConfigFlowResult:
         """Handle options flow."""
         if user_input is not None:
-            self.hass.config_entries.async_update_entry(
-                self.config_entry,
+            # Store settings in options (not data) so HA detects the change
+            # and fires the update listener → triggers integration reload.
+            return self.async_create_entry(
+                title="",
                 data={
-                    **self.config_entry.data,
                     CONF_MODEL: user_input[CONF_MODEL],
                     CONF_MCP_URL: user_input.get(CONF_MCP_URL, "").strip(),
                     CONF_INSTRUCTIONS: user_input.get(CONF_INSTRUCTIONS, "").strip(),
                 },
             )
-            return self.async_create_entry(title="", data={})
 
-        current_model = self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)
-        current_mcp_url = self.config_entry.data.get(CONF_MCP_URL, "")
-        current_instructions = self.config_entry.data.get(CONF_INSTRUCTIONS, "")
+        # Read from options first (updated via Configure), fall back to data (initial setup)
+        current_model = self.config_entry.options.get(
+            CONF_MODEL, self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+        )
+        current_mcp_url = self.config_entry.options.get(
+            CONF_MCP_URL, self.config_entry.data.get(CONF_MCP_URL, "")
+        )
+        current_instructions = self.config_entry.options.get(
+            CONF_INSTRUCTIONS, self.config_entry.data.get(CONF_INSTRUCTIONS, "")
+        )
 
         # If ha-mcp is configured but instructions are blank, suggest the default set.
         if current_mcp_url and not current_instructions:
             current_instructions = DEFAULT_HA_INSTRUCTIONS
+
+        # Try to fetch the live model list from the running client.
+        # Falls back to the static list if the client is unavailable.
+        model_options = await self._get_model_options(current_model)
 
         return self.async_show_form(
             step_id="init",
@@ -227,7 +270,7 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
                         default=current_model,
                     ): selector.SelectSelector(
                         selector.SelectSelectorConfig(
-                            options=SUPPORTED_MODELS,  # type: ignore[arg-type]
+                            options=model_options,  # type: ignore[arg-type]
                             mode=selector.SelectSelectorMode.DROPDOWN,
                         ),
                     ),
@@ -250,3 +293,23 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
                 }
             ),
         )
+
+    async def _get_model_options(self, current_model: str) -> list[dict[str, str]]:
+        """Fetch live model list from the Copilot CLI, falling back to the static list."""
+        try:
+            client = self.config_entry.runtime_data.client
+            model_ids = await client.async_available_models()
+            if model_ids:
+                LOGGER.debug("Fetched %d models from Copilot CLI", len(model_ids))
+                options = [{"value": m, "label": m} for m in model_ids]
+                # Ensure the currently-configured model is always in the list
+                if current_model and not any(o["value"] == current_model for o in options):
+                    options.insert(0, {"value": current_model, "label": f"{current_model} (current)"})
+                return options
+        except Exception as err:  # noqa: BLE001
+            LOGGER.debug("Could not fetch live models (%s), using static list", type(err).__name__)
+        # Fall back to static list, ensuring current model is present
+        options = list(SUPPORTED_MODELS)
+        if current_model and not any(o["value"] == current_model for o in options):
+            options.insert(0, {"value": current_model, "label": f"{current_model} (current)"})
+        return options

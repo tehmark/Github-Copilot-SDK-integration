@@ -68,7 +68,7 @@ Install in this order: **add-on first, then integration**.
 1. Go to **Settings** → **Devices & Services** → **Add Integration**
 2. Search for **GitHub Copilot Bridge Integration**
 3. The **Add-on URL** field is pre-filled with `http://github-copilot-bridge:7681` — this is the fixed hostname set in the add-on
-4. Select a **Model** (default: `gpt-4o`)
+4. Select a **Model** — after the connection is tested, the dropdown updates to show only models available on your account. Default: `gpt-5.4-mini` (fastest, no premium cost)
 5. Click **Submit** — the integration will test the connection to the running add-on
 
 > If the URL doesn't work, check the add-on **Info** tab for the actual hostname. It will look something like `56b5df53-github-copilot-bridge` (a hex prefix + your slug). Use `http://<hostname>:7681`.
@@ -130,20 +130,30 @@ automation:
 
 Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integration** → **Configure** to switch models.
 
-| Model | Cost (paid plans) | Notes |
-|---|---|---|
-| `gpt-4o` ✓ | **Included** | Default. Best balance of quality and speed |
-| `gpt-4o-mini` ✓ | **Included** | Faster, lighter — good for quick tasks |
-| `gpt-3.5-turbo` ✓ | **Included** | Fastest, lowest quality |
-| `o3-mini` | Premium | Reasoning model — slower, very capable |
-| `o1-mini` | Premium | Reasoning model |
-| `o1` | Premium (high) | Deep reasoning, high token cost |
-| `gpt-4-turbo` | Premium | Strong quality, premium cost |
-| `gpt-4` | Premium | Older flagship model |
-| `claude-3.5-sonnet` | Premium (~1×) | Anthropic model |
-| `claude-3.7-sonnet` | Premium (~1×) | Anthropic model, latest |
+The model dropdown is populated **live from the Copilot CLI** when you open Configure, so you'll always see exactly what's available on your account. The table below shows the current GitHub Copilot model lineup as a reference — GitHub updates this frequently.
 
-> **Tip:** Start with `gpt-4o` — it's included in paid plans, so every request is free against your allowance. Switch to a premium model only if you need deeper reasoning or a specific style. GitHub updates multipliers frequently; check [github.com/features/copilot/plans](https://github.com/features/copilot/plans) for current numbers.
+| Model | Cost | Speed | Notes |
+|---|---|---|---|
+| `gpt-5.4-mini` | **Included** | ⚡⚡⚡ | **Default. Fastest — recommended for voice & HA control** |
+| `gpt-5-mini` | **Included** | ⚡⚡⚡ | Fast, included |
+| `gpt-5.1-codex-mini` | **Included** | ⚡⚡⚡ | Fast, code-optimised, included |
+| `gpt-4.1` | **Included** | ⚡⚡⚡ | Fast, included |
+| `claude-haiku-4.5` | **Included** | ⚡⚡⚡ | Fast Anthropic model, included |
+| `gpt-5.1` | Premium | ⚡⚡ | Balanced quality |
+| `gpt-5.2` | Premium | ⚡⚡ | Balanced quality |
+| `gpt-5.1-codex` | Premium | ⚡⚡ | Code-focused |
+| `gpt-5.2-codex` | Premium | ⚡⚡ | Code-focused |
+| `gpt-5.3-codex` | Premium | ⚡⚡ | Code-focused |
+| `claude-sonnet-4` | Premium | ⚡⚡ | Anthropic Sonnet |
+| `claude-sonnet-4.5` | Premium | ⚡⚡ | Anthropic Sonnet |
+| `claude-sonnet-4.6` | Premium | ⚡⚡ | Latest Anthropic Sonnet |
+| `gemini-3-pro-preview` | Premium | ⚡⚡ | Google Gemini |
+| `gpt-5.4` | Premium (high) | ⚡ | Most capable GPT |
+| `gpt-5.1-codex-max` | Premium (high) | ⚡ | Max code model |
+| `claude-opus-4.5` | Premium (high) | ⚡ | Anthropic flagship |
+| `claude-opus-4.6` | Premium (high) | ⚡ | Latest Anthropic Opus |
+
+> **Tip for voice / HA control:** Use `gpt-5.4-mini` — it is the fastest model, included at no extra cost, and handles quick commands well. For more reasoning without sacrificing too much speed, try `claude-haiku-4.5` or `gpt-5.1`. Check [github.com/features/copilot/plans](https://github.com/features/copilot/plans) for current model availability.
 
 ## Troubleshooting
 

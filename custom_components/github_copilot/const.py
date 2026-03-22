@@ -14,25 +14,35 @@ CONF_MCP_URL = "mcp_url"
 CONF_INSTRUCTIONS = "instructions"
 
 # Default values
-DEFAULT_MODEL = "gpt-4o"
+DEFAULT_MODEL = "gpt-5.4-mini"
 DEFAULT_CLI_URL = "http://github-copilot-bridge:7681"
 
-# Model list with display labels showing approximate cost category.
-# "Included" models do not consume premium requests on paid Copilot plans.
-# "Premium" models draw from your monthly premium-request allowance.
-# Check https://docs.github.com/en/copilot/about-github-copilot/plans-for-github-copilot
-# for the current multiplier table, as GitHub updates it frequently.
+# Fallback model list used when the live Copilot CLI is unreachable.
+# The Configure dialog fetches the real list dynamically — this is only a safety net.
+# GitHub updates available models frequently; check https://github.com/features/copilot/plans.
+# ⚡ = fast/low-latency  ✓ = included (no premium cost)  $ = uses premium request budget
 SUPPORTED_MODELS = [
-    {"value": "gpt-4o",          "label": "GPT-4o — included, no premium cost ✓"},
-    {"value": "gpt-4o-mini",     "label": "GPT-4o mini — included, faster & lighter ✓"},
-    {"value": "gpt-3.5-turbo",   "label": "GPT-3.5 Turbo — included, fastest response ✓"},
-    {"value": "o3-mini",         "label": "o3-mini — reasoning model, uses premium requests"},
-    {"value": "o1-mini",         "label": "o1-mini — reasoning model, uses premium requests"},
-    {"value": "o1",              "label": "o1 — deep reasoning, high premium cost"},
-    {"value": "gpt-4-turbo",     "label": "GPT-4 Turbo — uses premium requests"},
-    {"value": "gpt-4",           "label": "GPT-4 — uses premium requests"},
-    {"value": "claude-3.5-sonnet", "label": "Claude 3.5 Sonnet — uses premium requests"},
-    {"value": "claude-3.7-sonnet", "label": "Claude 3.7 Sonnet — uses premium requests"},
+    # --- Fast / Included (recommended for voice & HA control) ---
+    {"value": "gpt-5.4-mini",        "label": "gpt-5.4-mini ⚡✓ — fastest, included (recommended for voice)"},
+    {"value": "gpt-5-mini",          "label": "gpt-5-mini ⚡✓ — fast, included"},
+    {"value": "gpt-5.1-codex-mini",  "label": "gpt-5.1-codex-mini ⚡✓ — fast, code-optimised, included"},
+    {"value": "gpt-4.1",             "label": "gpt-4.1 ⚡✓ — fast, included"},
+    {"value": "claude-haiku-4.5",    "label": "claude-haiku-4.5 ⚡✓ — fast Anthropic model, included"},
+    # --- Balanced quality / premium ---
+    {"value": "gpt-5.1",             "label": "gpt-5.1 $ — balanced quality, premium requests"},
+    {"value": "gpt-5.2",             "label": "gpt-5.2 $ — balanced quality, premium requests"},
+    {"value": "gpt-5.1-codex",       "label": "gpt-5.1-codex $ — code-focused, premium requests"},
+    {"value": "gpt-5.2-codex",       "label": "gpt-5.2-codex $ — code-focused, premium requests"},
+    {"value": "gpt-5.3-codex",       "label": "gpt-5.3-codex $ — code-focused, premium requests"},
+    {"value": "claude-sonnet-4",     "label": "claude-sonnet-4 $ — Anthropic, premium requests"},
+    {"value": "claude-sonnet-4.5",   "label": "claude-sonnet-4.5 $ — Anthropic, premium requests"},
+    {"value": "claude-sonnet-4.6",   "label": "claude-sonnet-4.6 $ — latest Anthropic Sonnet, premium requests"},
+    {"value": "gemini-3-pro-preview", "label": "gemini-3-pro-preview $ — Google, premium requests"},
+    # --- Heavy / high-cost ---
+    {"value": "gpt-5.4",             "label": "gpt-5.4 $$ — most capable GPT, premium requests"},
+    {"value": "gpt-5.1-codex-max",   "label": "gpt-5.1-codex-max $$ — max code model, premium requests"},
+    {"value": "claude-opus-4.5",     "label": "claude-opus-4.5 $$ — Anthropic flagship, premium requests"},
+    {"value": "claude-opus-4.6",     "label": "claude-opus-4.6 $$ — latest Anthropic Opus, premium requests"},
 ]
 
 # Plain list of model IDs for validation logic
