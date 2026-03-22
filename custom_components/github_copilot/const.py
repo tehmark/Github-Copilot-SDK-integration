@@ -10,6 +10,7 @@ ATTRIBUTION = "Powered by GitHub Copilot SDK"
 # Configuration constants
 CONF_MODEL = "model"
 CONF_CLI_URL = "cli_url"
+CONF_MCP_URL = "mcp_url"
 
 # Default values
 DEFAULT_MODEL = "gpt-4o"

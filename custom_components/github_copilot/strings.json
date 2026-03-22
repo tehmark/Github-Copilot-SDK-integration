@@ -5,11 +5,13 @@
                 "description": "Connect to the GitHub Copilot Bridge Addon. Install and start the add-on first, then enter its URL below. For more information, visit the [documentation]({documentation_url}).",
                 "data": {
                     "cli_url": "Add-on URL",
-                    "model": "Model"
+                    "model": "Model",
+                    "mcp_url": "MCP Server URL (optional)"
                 },
                 "data_description": {
                     "cli_url": "URL of the GitHub Copilot Bridge Addon server. Default: http://github-copilot-bridge:7681 — this is set by the add-on's fixed hostname. Only change this if you customized the hostname.",
-                    "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers."
+                    "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers.",
+                    "mcp_url": "Optional: SSE URL of a running ha-mcp addon (e.g. from the ha-mcp Logs tab). When set, Copilot gains 96 tools to read and control your Home Assistant — devices, automations, dashboards, and more. Leave blank to skip."
                 }
             }
         },
@@ -28,10 +30,12 @@
         "step": {
             "init": {
                 "data": {
-                    "model": "Model"
+                    "model": "Model",
+                    "mcp_url": "MCP Server URL (optional)"
                 },
                 "data_description": {
-                    "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers."
+                    "model": "Models marked ✓ are included in paid Copilot plans (no premium request cost). Others draw from your monthly premium-request allowance — see github.com/features/copilot/plans for current multipliers.",
+                    "mcp_url": "Optional: SSE URL of a running ha-mcp addon. When set, Copilot gains 96 tools to read and control your Home Assistant. Leave blank to skip."
                 }
             }
         }

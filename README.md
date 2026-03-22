@@ -81,6 +81,23 @@ Once set up, select **GitHub Copilot Bridge Integration** as the conversation ag
 - A voice assistant pipeline (**Settings** → **Voice Assistants**)
 - The HA chat UI
 
+### Home Assistant control with ha-mcp (optional)
+
+Install the **ha-mcp** addon to give Copilot 96 tools to read and control your Home Assistant — devices, automations, scripts, dashboards, and more.
+
+1. Add the ha-mcp repository: **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories** → add `https://github.com/homeassistant-ai/ha-mcp`
+2. Install **Home Assistant MCP Server** and click **Start**
+3. Open the ha-mcp **Log** tab — you'll see a line like:
+   ```
+   MCP server URL: http://local-home-assistant-mcp-server:11434/sse
+   ```
+4. Go to **Settings** → **Devices & Services** → **GitHub Copilot Bridge Integration** → **Configure**
+5. Paste that URL into the **MCP Server URL** field and click **Submit**
+
+Now when you chat with Copilot it can answer questions like _"Turn off all the lights in the living room"_ or _"Create an automation that runs at sunset"_ and actually execute them.
+
+> **Note**: ha-mcp connects to Home Assistant automatically when installed as an addon — no separate token is needed.
+
 ### Automation example
 
 ```yaml

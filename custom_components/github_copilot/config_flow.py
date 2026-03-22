@@ -18,6 +18,7 @@ from .api import (
 from .const import (
     CONF_CLI_URL,
     CONF_MODEL,
+    CONF_MCP_URL,
     DEFAULT_CLI_URL,
     DEFAULT_MODEL,
     DOMAIN,
@@ -48,6 +49,7 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             model = user_input.get(CONF_MODEL, DEFAULT_MODEL)
             cli_url = user_input.get(CONF_CLI_URL, DEFAULT_CLI_URL).strip()
+            mcp_url = user_input.get(CONF_MCP_URL, "").strip()
 
             if not cli_url:
                 _errors[CONF_CLI_URL] = "required"
@@ -123,6 +125,14 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                                 mode=selector.SelectSelectorMode.DROPDOWN,
                             ),
                         ),
+                        vol.Optional(
+                            CONF_MCP_URL,
+                            default="",
+                        ): selector.TextSelector(
+                            selector.TextSelectorConfig(
+                                type=selector.TextSelectorType.URL,
+                            ),
+                        ),
                     },
                 ),
                 errors=_errors,
@@ -196,11 +206,13 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
                 data={
                     **self.config_entry.data,
                     CONF_MODEL: user_input[CONF_MODEL],
+                    CONF_MCP_URL: user_input.get(CONF_MCP_URL, "").strip(),
                 },
             )
             return self.async_create_entry(title="", data={})
 
         current_model = self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL)
+        current_mcp_url = self.config_entry.data.get(CONF_MCP_URL, "")
 
         return self.async_show_form(
             step_id="init",
@@ -213,6 +225,14 @@ class GitHubCopilotOptionsFlow(config_entries.OptionsFlow):
                         selector.SelectSelectorConfig(
                             options=SUPPORTED_MODELS,  # type: ignore[arg-type]
                             mode=selector.SelectSelectorMode.DROPDOWN,
+                        ),
+                    ),
+                    vol.Optional(
+                        CONF_MCP_URL,
+                        default=current_mcp_url,
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.URL,
                         ),
                     ),
                 }

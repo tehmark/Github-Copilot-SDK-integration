@@ -80,10 +80,22 @@ class GitHubCopilotApiClient:
     async def async_create_session(self) -> CopilotSessionContext:
         """Create a Copilot SDK session."""
         client = await self._ensure_client()
+        mcp_url = self._client_options.get("mcp_url", "").strip()
+        mcp_servers = None
+        if mcp_url:
+            mcp_servers = {
+                "home_assistant": {
+                    "type": "sse",
+                    "url": mcp_url,
+                    "tools": ["*"],
+                }
+            }
+            LOGGER.debug("Creating session with ha-mcp at %s", mcp_url)
         try:
             copilot_session = await client.create_session(
                 on_permission_request=PermissionHandler.approve_all,
                 model=self._model,
+                mcp_servers=mcp_servers,
             )
         except TimeoutError as exception:
             LOGGER.error(

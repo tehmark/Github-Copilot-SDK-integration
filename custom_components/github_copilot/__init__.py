@@ -17,6 +17,7 @@ from .api import GitHubCopilotApiClient
 from .const import (
     CONF_CLI_URL,
     CONF_MODEL,
+    CONF_MCP_URL,
     DEFAULT_CLI_URL,
     DEFAULT_MODEL,
     DOMAIN,
@@ -49,17 +50,23 @@ async def async_setup_entry(
             update_interval=timedelta(hours=1),
         )
         cli_url = entry.data.get(CONF_CLI_URL, DEFAULT_CLI_URL).strip()
+        mcp_url = entry.data.get(CONF_MCP_URL, "").strip()
         if not cli_url:
             LOGGER.error(
                 "No Copilot CLI URL in config entry — cannot set up integration. "
                 "Please re-add the integration and provide the add-on URL."
             )
             return False
+        if mcp_url:
+            LOGGER.debug(
+                "MCP server configured: %s",
+                mcp_url,
+            )
         LOGGER.debug("Setting up GitHub Copilot integration with add-on URL: %s", cli_url)
         entry.runtime_data = GitHubCopilotData(
             client=GitHubCopilotApiClient(
                 model=entry.data.get(CONF_MODEL, DEFAULT_MODEL),
-                client_options={"cli_url": cli_url},
+                client_options={"cli_url": cli_url, "mcp_url": mcp_url},
             ),
             integration=async_get_loaded_integration(hass, entry.domain),
             coordinator=coordinator,
