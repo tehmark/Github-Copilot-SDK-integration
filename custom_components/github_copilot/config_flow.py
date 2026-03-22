@@ -186,6 +186,76 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 errors={"base": "unknown"},
             )
 
+    async def async_step_reconfigure(
+        self,
+        user_input: dict | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Handle reconfiguration — allows updating the add-on URL."""
+        _errors = {}
+        if user_input is not None:
+            cli_url = user_input.get(CONF_CLI_URL, DEFAULT_CLI_URL).strip()
+
+            if not cli_url:
+                _errors[CONF_CLI_URL] = "required"
+            else:
+                parsed = urlparse(cli_url)
+                if parsed.scheme not in ("http", "https") or not parsed.netloc:
+                    _errors[CONF_CLI_URL] = "invalid_url"
+
+            if not _errors:
+                try:
+                    LOGGER.debug(
+                        "Reconfigure: testing connection to Copilot add-on at '%s'",
+                        cli_url,
+                    )
+                    await self._test_connection(
+                        cli_url=cli_url,
+                        model=self.config_entry.data.get(CONF_MODEL, DEFAULT_MODEL),
+                    )
+                except GitHubCopilotApiClientAuthenticationError as exception:
+                    LOGGER.warning("Reconfigure: auth failed: %s", exception)
+                    _errors["base"] = "auth"
+                except GitHubCopilotApiClientCommunicationError as exception:
+                    LOGGER.error("Reconfigure: connection failed: %s", exception)
+                    _errors["base"] = "connection"
+                except GitHubCopilotApiClientError as exception:
+                    LOGGER.exception("Reconfigure: unexpected error: %s", exception)
+                    _errors["base"] = "unknown"
+                except Exception as exception:  # noqa: BLE001
+                    LOGGER.exception("Reconfigure: unexpected error: %s", type(exception).__name__)
+                    _errors["base"] = "unknown"
+                else:
+                    LOGGER.info(
+                        "Reconfigure: add-on URL updated to '%s'",
+                        cli_url,
+                    )
+                    return self.async_update_reload_and_abort(
+                        self._get_reconfigure_entry(),
+                        data_updates={CONF_CLI_URL: cli_url},
+                    )
+
+        current_url = self.config_entry.data.get(CONF_CLI_URL, DEFAULT_CLI_URL)
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_CLI_URL,
+                        default=current_url,
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.URL,
+                        ),
+                    ),
+                }
+            ),
+            errors=_errors,
+            description_placeholders={
+                "default_url": DEFAULT_CLI_URL,
+                "current_url": current_url,
+            },
+        )
+
     async def _test_connection(
         self,
         cli_url: str,

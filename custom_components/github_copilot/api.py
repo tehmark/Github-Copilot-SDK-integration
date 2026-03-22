@@ -63,7 +63,10 @@ class GitHubCopilotApiClient:
 
     async def async_test_connection(self) -> bool:
         """
-        Test the API connection.
+        Test connectivity to the Copilot add-on.
+
+        Verifies that the add-on is reachable and the CLI is running.
+        Does NOT send any inference request — connectivity only.
 
         Raises:
             GitHubCopilotApiClientAuthenticationError: If authentication fails.
@@ -74,11 +77,7 @@ class GitHubCopilotApiClient:
             True if connection is successful.
 
         """
-        session = await self.async_create_session()
-        try:
-            await self.async_send_prompt(session.session_id, "Hello")
-        finally:
-            await self.async_end_session(session.session_id)
+        await self._ensure_client()
         return True
 
     async def async_create_session(self) -> CopilotSessionContext:

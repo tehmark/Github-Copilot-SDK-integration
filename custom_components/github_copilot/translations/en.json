@@ -13,6 +13,15 @@
                     "model": "Select the model to use. After a successful connection test, the list is refreshed to show only models available on your account. If the model you chose isn't available, you'll be prompted to pick again.",
                     "mcp_url": "Optional: SSE URL of a running ha-mcp addon. Check the ha-mcp Logs tab for your unique URL — it looks like http://192.168.1.x:9583/private_AbCd1234... and is stable (never changes after first start). Leave blank to skip."
                 }
+            },
+            "reconfigure": {
+                "description": "Update the URL of the GitHub Copilot Bridge Addon. Use this if the add-on hostname changed. The fixed hostname is {default_url} — try that first.",
+                "data": {
+                    "cli_url": "Add-on URL"
+                },
+                "data_description": {
+                    "cli_url": "URL of the GitHub Copilot Bridge Addon server. Current value: {current_url}. The fixed hostname is {default_url}."
+                }
             }
         },
         "error": {
