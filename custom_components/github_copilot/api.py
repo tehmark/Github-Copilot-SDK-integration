@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 from .copilot_sdk import CopilotClient, ExternalServerConfig, PermissionHandler
 from .copilot_sdk.session import CopilotSession
 
-from .const import DEFAULT_HA_SYSTEM_PROMPT, LOGGER
+from .const import LOGGER
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -97,25 +97,16 @@ class GitHubCopilotApiClient:
             }
             LOGGER.debug("Creating session with ha-mcp at %s", mcp_url)
 
-        # Build the system message. When MCP is configured we inject the HA context
-        # prompt so Copilot proactively uses the tools.
-        # Any user-provided custom instructions are appended on top.
+        # Build the system message from user-provided instructions only.
+        # No hard-coded prompt is injected — the config instructions field is
+        # the sole source of truth for the system message.
         system_message: dict | None = None
-        parts: list[str] = []
-        if mcp_url:
-            parts.append(DEFAULT_HA_SYSTEM_PROMPT)
-            parts.append(
-                "Your Home Assistant MCP server is registered and available as tools "
-                "in this session. Use the tools directly by name — no URL is needed."
-            )
         if instructions:
-            parts.append(instructions)
-        if parts:
-            system_message = {"mode": "append", "content": "\n\n".join(parts)}
+            system_message = {"mode": "append", "content": instructions}
             LOGGER.debug(
                 "Session system message (%d chars): %.120s...",
-                len(system_message["content"]),
-                system_message["content"],
+                len(instructions),
+                instructions,
             )
 
         try:
@@ -175,7 +166,7 @@ class GitHubCopilotApiClient:
         return session_context
 
     async def async_get_shared_session(self) -> CopilotSessionContext:
-        """Get the shared persistent session, resuming or creating it as needed."""
+        """Get the shared persistent session, creating it on first use."""
         # Fast path: no lock needed if already set (atomic reference read in CPython)
         if self._shared_session is not None:
             return self._shared_session
@@ -183,66 +174,9 @@ class GitHubCopilotApiClient:
             # Double-check after acquiring lock to prevent concurrent creation
             if self._shared_session is not None:
                 return self._shared_session
-            session = await self._try_resume_or_create_session()
+            session = await self.async_create_session()
             self._shared_session = session
             return session
-
-    async def _try_resume_or_create_session(self) -> CopilotSessionContext:
-        """Try to resume the CLI's last saved session, falling back to a fresh one."""
-        client = await self._ensure_client()
-        mcp_url = self._client_options.get("mcp_url", "").strip()
-        instructions = self._client_options.get("instructions", "").strip()
-        mcp_servers = None
-        if mcp_url:
-            mcp_servers = {
-                "home_assistant": {
-                    "type": "http",
-                    "url": mcp_url,
-                    "tools": ["*"],
-                }
-            }
-
-        try:
-            last_id = await client.get_last_session_id()
-            if last_id:
-                LOGGER.debug("Attempting to resume last Copilot session %s...", last_id)
-                copilot_session = await client.resume_session(
-                    last_id,
-                    on_permission_request=PermissionHandler.approve_all,
-                    model=self._model,
-                    mcp_servers=mcp_servers,
-                )
-                session_context = CopilotSessionContext(
-                    session_id=last_id,
-                    copilot_session=copilot_session,
-                    mcp_url=mcp_url,
-                    instructions=instructions,
-                )
-                async with self._session_lock:
-                    self._sessions[last_id] = session_context
-                LOGGER.info("Resumed previous Copilot session %s", last_id)
-                return session_context
-        except Exception as err:
-            LOGGER.warning(
-                "Could not resume previous session (%s: %s), creating new session",
-                type(err).__name__,
-                str(err),
-            )
-
-        return await self.async_create_session()
-
-    async def async_prewarm(self) -> None:
-        """Pre-warm the shared session at startup. Called as a background task."""
-        LOGGER.debug("Pre-warming Copilot session in background...")
-        try:
-            await self.async_get_shared_session()
-            LOGGER.info("Copilot session pre-warmed and ready")
-        except Exception as err:
-            LOGGER.warning(
-                "Session pre-warm failed (will retry on first use): %s - %s",
-                type(err).__name__,
-                str(err),
-            )
 
     def invalidate_shared_session(self) -> None:
         """Invalidate the shared session so it will be recreated on next use."""

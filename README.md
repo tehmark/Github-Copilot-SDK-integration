@@ -81,6 +81,8 @@ Once set up, select **GitHub Copilot Bridge Integration** as the conversation ag
 - A voice assistant pipeline (**Settings** → **Voice Assistants**)
 - The HA chat UI
 
+This integration is designed as a **heavy-task agent** — best for complex, multi-step Home Assistant tasks like building automations, diagnosing issues, or analysing sensor history. Results can be saved to HA helper entities (input_text, note) for a lighter model to read later.
+
 ### Home Assistant control with ha-mcp (optional)
 
 Install the **ha-mcp** addon to give Copilot 96 tools to read and control your Home Assistant — devices, automations, scripts, dashboards, and more.
@@ -98,23 +100,25 @@ Install the **ha-mcp** addon to give Copilot 96 tools to read and control your H
 
    > **Why enable tool search?** `claude-haiku-4.5` (the default model) lacks "deferred tool loading" — without tool search, all 96 tools (~46K tokens) are sent with every message. With tool search ON, this drops to ~5K tokens and two fast round-trips, which is quicker than one slow 46K-token call.
    >
-   > **Using Sonnet/Opus instead?** Those models support deferred tool loading (tools load on-demand at ~0 idle cost), so you can **disable** tool search for a single round-trip per command. Note: Copilot Pro includes ~300 premium requests/month, which limits Sonnet to ~150-300 voice commands/month.
+   > **Using Sonnet/Opus instead?** Those models support deferred tool loading (tools load on-demand at ~0 idle cost), so you can **disable** tool search for a single round-trip per command. Note: Copilot Pro includes ~300 premium requests/month.
 
-Now when you chat with Copilot it can answer questions like _"Turn off all the lights in the living room"_ or _"Create an automation that runs at sunset"_ and actually execute them.
+Now Copilot can carry out complex tasks like _"Create an automation that runs at sunset and dims the living room lights to 30%"_ or _"Check my sensor history for the past week and save a summary to a note helper"_.
 
 > **Note**: ha-mcp connects to Home Assistant automatically when installed as an addon — no separate token is needed.
 
-### Custom Instructions (optional)
+### Custom Instructions
 
-You can teach Copilot about your specific home by adding **Custom Instructions** in the Configure dialog (**Settings → Devices & Services → GitHub Copilot Bridge Integration → Configure**).
+**Custom Instructions** define the agent's role and behaviour. Set them in **Settings → Devices & Services → GitHub Copilot Bridge Integration → Configure**.
 
-Use this to describe:
-- Room or device names that differ from HA entity IDs (e.g. _"The light called 'desk_lamp' is in my office"_)
-- Personal preferences (e.g. _"I prefer temperatures in Celsius"_)
-- Behavioural rules (e.g. _"Always ask for confirmation before turning off any device after 10 PM"_)
-- Anything else Copilot should remember in every conversation
+When ha-mcp is configured and the field is empty, a default set of instructions is pre-filled that:
+- Identifies the agent as a capable HA task agent
+- Directs it to use ha-mcp's tool search pattern
+- Instructs it to save task results to a HA helper entity after completion
 
-These instructions are injected before every message sent to Copilot, so it always has them in view — even deep into a long conversation. When ha-mcp is also configured, the MCP server address is automatically included so Copilot knows exactly where to find your Home Assistant tools without you having to say so.
+You can customise or replace these entirely. Useful additions:
+- Specific helper entity names to use for saving results (e.g. _"Save summaries to input_text.copilot_notes"_)
+- Domain knowledge about your home (e.g. _"My 'media room' is in the basement, entity prefix: media_room_"_)
+- Task constraints (e.g. _"Never delete automations without listing them first and confirming"_)
 
 ### Automation example
 

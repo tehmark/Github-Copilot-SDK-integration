@@ -48,40 +48,27 @@ SUPPORTED_MODELS = [
 # Plain list of model IDs for validation logic
 SUPPORTED_MODEL_IDS = [m["value"] for m in SUPPORTED_MODELS]
 
-# Default system message appended when ha-mcp is configured.
-# Tells Copilot it's acting as a Home Assistant agent and should use MCP tools proactively.
-DEFAULT_HA_SYSTEM_PROMPT = (
-    "You are a smart home assistant integrated into Home Assistant. "
-    "You have access to a set of Home Assistant MCP tools that let you read and control "
-    "devices, entities, automations, scripts, scenes, and dashboards in the user's home. "
-    "When the user asks about their home, devices, lights, climate, sensors, or wants to "
-    "control anything in their house, use these tools proactively — do not just describe "
-    "what you could do, actually do it. "
-    "Always confirm what you did after completing an action. "
-    "If a request is ambiguous (e.g. 'the lights' could mean multiple rooms), ask a "
-    "short clarifying question before acting."
-)
-
 # Default custom instructions pre-populated when ha-mcp is configured.
-# Optimised for claude-haiku-4.5 with ha-mcp "Enable tool search" mode ON.
-# Haiku lacks deferred tool loading — tool search reduces idle context from ~46K to ~5K tokens.
-# In tool search mode: ha_search_tools discovers available tools; proxies execute them.
+# Reflects the new scope: a heavy-task agent that performs complex HA tasks and saves
+# results to HA helper entities so a lighter model can read them later.
+# Optimised for claude-haiku-4.5 with ha-mcp "Enable tool search" ON.
 DEFAULT_HA_INSTRUCTIONS = (
-    "When controlling or querying Home Assistant:\n"
-    "- Always call ha_search_tools first to find the right tool for the task. "
-    "Use descriptive search terms — e.g. 'turn on light', 'get sensor state', 'run script'.\n"
-    "- Be fuzzy with device names. A ceiling fan may be a switch entity with 'fan' in the name, "
-    "not a fan entity. Try 'fan', 'ceiling', 'switch' if the first search finds nothing.\n"
-    "- Use the write proxy for on/off/toggle/set actions. Use the read proxy for state queries. "
-    "Use the delete proxy only for removing things.\n"
-    "- For 'all X' requests (e.g. 'all lights', 'all fans'), search broadly and call the write proxy "
-    "for each matching entity, or find a bulk tool if available.\n"
-    "- For simple on/off/toggle commands, act immediately without asking for confirmation. "
-    "After acting, briefly report what you did in one sentence (e.g. 'Turned on 3 fans in the house.').\n"
-    "- If a search returns no results, retry with alternate terms "
-    "(e.g. 'ceiling', 'lamp', 'overhead', 'switch').\n"
-    "- Keep all responses short and conversational — responses are read aloud via voice assistant. "
-    "One or two sentences maximum. Do not use emoji, bullet points, or markdown formatting."
+    "You are a capable Home Assistant task agent. "
+    "You have access to Home Assistant via the ha-mcp MCP server. "
+    "Use it to carry out complex tasks: build automations, diagnose issues, "
+    "analyse sensor history, manage devices and dashboards.\n\n"
+    "When using Home Assistant tools:\n"
+    "- Call ha_search_tools first to find the right tool. "
+    "Use descriptive search terms — e.g. 'get sensor history', 'create automation', 'set helper value'.\n"
+    "- Use the write proxy for create/update/set/control actions. "
+    "Use the read proxy for queries and state reads. "
+    "Use the delete proxy only for removals.\n"
+    "- Be thorough. For complex tasks, gather all needed context before acting.\n\n"
+    "When a task is complete:\n"
+    "- Save a concise summary of what was done, key findings, and any created entity IDs "
+    "to a Home Assistant input_text or note helper entity using ha-mcp. "
+    "This lets a lighter model read your work later without repeating it.\n"
+    "- Report clearly what you did and what was saved, including the helper entity name."
 )
 
 

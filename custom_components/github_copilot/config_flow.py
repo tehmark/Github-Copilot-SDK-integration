@@ -26,7 +26,6 @@ from .const import (
     DOMAIN,
     LOGGER,
     SUPPORTED_MODELS,
-    SUPPORTED_MODEL_IDS,
 )
 
 
@@ -76,14 +75,17 @@ class GitHubCopilotFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     )
                     live_model_ids = await self._test_connection(cli_url=cli_url, model=model)
                     if live_model_ids and model not in live_model_ids:
-                        # Model isn't available on this account — re-show with live list
+                        # Model isn't in the live list — silently substitute the first
+                        # available model rather than showing a confusing re-render.
+                        substituted = live_model_ids[0]
                         LOGGER.warning(
-                            "Selected model '%s' not in live model list %s",
+                            "Selected model '%s' not in live model list; substituting '%s'. "
+                            "The model can be changed later via Configure.",
                             model,
-                            live_model_ids,
+                            substituted,
                         )
-                        self._live_models = [{"value": m, "label": m} for m in live_model_ids]
-                        _errors[CONF_MODEL] = "model_unavailable"
+                        user_input = {**user_input, CONF_MODEL: substituted}
+                        model = substituted
                 except GitHubCopilotApiClientAuthenticationError as exception:
                     LOGGER.warning(
                         "GitHub Copilot authentication failed: %s",
